@@ -5,8 +5,8 @@ use std::rc::Rc;
 
 use gtk::prelude::*;
 
-use crate::config::Config;
-use crate::theme::{THEMES, Theme};
+use atenea::config::Config;
+use atenea::theme::{THEMES, Theme};
 
 /// Estilo propio de Atenea, después del CSS del tema.
 const CSS: &str = "

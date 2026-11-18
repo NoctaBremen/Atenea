@@ -1,8 +1,5 @@
 //! Atenea: explorador de vinilos sobre los dumps de Discogs.
 
-mod config;
-mod fsutil;
-mod theme;
 mod ui;
 
 use gtk::glib;
