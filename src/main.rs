@@ -15,7 +15,8 @@ fn main() -> glib::ExitCode {
         )
         .init();
     let app = gtk::Application::builder().application_id(APP_ID).build();
-    gtk::Window::set_default_icon_name(APP_ID);
+    // El icono se pone ya con GTK iniciado (en `startup`), no antes.
+    app.connect_startup(|_| gtk::Window::set_default_icon_name(APP_ID));
     app.connect_activate(ui::window::build);
     // Los argumentos (una base .db) los lee la ventana; a GTK solo se le pasa el nombre.
     app.run_with_args(&["atenea"])
