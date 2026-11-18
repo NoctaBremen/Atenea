@@ -112,6 +112,8 @@ pub struct App {
     player_events: RefCell<Option<Receiver<PlayerEvent>>>,
     now: RefCell<Option<NowPlaying>>,
     center: gtk::Stack,
+    /// Precarga en curso de la base abierta (se cancela al cambiar de base).
+    warming: RefCell<Option<std::sync::Arc<std::sync::atomic::AtomicBool>>>,
 }
 
 fn dim(text: &str) -> gtk::Label {
@@ -165,6 +167,7 @@ impl App {
                 self.model.set_base(Some(Rc::clone(&b)));
                 self.filters().load_base(&b);
                 self.base.replace(Some(b));
+                self.start_warming(path);
                 self.reload_suitcases();
                 {
                     let mut c = self.config.borrow_mut();
@@ -180,6 +183,36 @@ impl App {
                 self.config.borrow().save();
                 dialogs::inform(&self.window, "No se pudo abrir la base", &e.to_string());
             }
+        }
+    }
+
+    /// Precarga la base en la caché del sistema en un hilo aparte si cabe holgadamente en la
+    /// RAM libre, para que las búsquedas lean de memoria desde el principio.
+    fn start_warming(&self, path: &Path) {
+        if let Some(old) = self.warming.take() {
+            old.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
+        if !vault::memory::plan_for(path).warm {
+            return;
+        }
+        let cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        self.warming.replace(Some(std::sync::Arc::clone(&cancel)));
+        let path = path.to_owned();
+        let spawned = std::thread::Builder::new()
+            .name("vault-precarga".into())
+            .spawn(move || {
+                let t = std::time::Instant::now();
+                match vault::memory::warm_file(&path, &cancel) {
+                    Ok(n) => tracing::info!(
+                        "base precargada en memoria: {} MB en {:.1} s",
+                        n >> 20,
+                        t.elapsed().as_secs_f64()
+                    ),
+                    Err(e) => tracing::warn!("no se pudo precargar la base: {e}"),
+                }
+            });
+        if let Err(e) = spawned {
+            tracing::warn!("no se pudo lanzar la precarga: {e}");
         }
     }
 
@@ -1584,6 +1617,7 @@ pub fn build(gtk_app: &gtk::Application) {
             player_events: RefCell::default(),
             now: RefCell::default(),
             center,
+            warming: RefCell::default(),
         }
     });
 

@@ -8,6 +8,7 @@ pub mod db;
 pub mod discogs;
 pub mod export;
 pub mod fsutil;
+pub mod memory;
 pub mod player;
 pub mod theme;
 pub mod userdb;

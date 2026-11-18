@@ -221,7 +221,13 @@ impl Base {
                 | OpenFlags::SQLITE_OPEN_URI
                 | OpenFlags::SQLITE_OPEN_NO_MUTEX,
         )?;
-        conn.execute_batch("PRAGMA cache_size = -131072; PRAGMA temp_store = MEMORY;")?;
+        // Memoria: la base se mapea en RAM (entera si cabe holgadamente, ver `memory`); la
+        // caché propia de SQLite solo guarda páginas ya descomprimidas de uso frecuente.
+        let mem = crate::memory::plan_for(path);
+        conn.execute_batch(&format!(
+            "PRAGMA mmap_size = {}; PRAGMA cache_size = -262144; PRAGMA temp_store = MEMORY;",
+            mem.mmap_bytes
+        ))?;
         let has_releases: Option<String> = conn
             .query_row(
                 "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'releases'",

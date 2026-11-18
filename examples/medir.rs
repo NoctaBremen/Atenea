@@ -8,6 +8,16 @@ fn main() -> anyhow::Result<()> {
     let path = std::env::args()
         .nth(1)
         .ok_or_else(|| anyhow::anyhow!("falta la base"))?;
+    if std::env::args().any(|a| a == "--precargar") {
+        let t = Instant::now();
+        let n =
+            vault::memory::warm_file(path.as_ref(), &std::sync::atomic::AtomicBool::new(false))?;
+        println!(
+            "precarga                      {:>6.0} ms ({} MB)",
+            t.elapsed().as_secs_f64() * 1000.0,
+            n >> 20
+        );
+    }
     let t = Instant::now();
     let b = Base::open(path.as_ref(), None)?;
     println!(
