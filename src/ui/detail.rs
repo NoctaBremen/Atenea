@@ -70,10 +70,12 @@ impl DetailPanel {
         content.set_margin_end(12);
         content.set_margin_top(10);
         content.set_margin_bottom(10);
+        // Ancho fijo: con barra horizontal automática el panel no crece con lo que muestra
+        // (la lista no se mueve al cambiar de disco).
         let root = gtk::ScrolledWindow::builder()
             .child(&content)
-            .hscrollbar_policy(gtk::PolicyType::Never)
-            .width_request(320)
+            .hscrollbar_policy(gtk::PolicyType::Automatic)
+            .propagate_natural_width(false)
             .build();
         let note = gtk::TextView::builder()
             .wrap_mode(gtk::WrapMode::WordChar)
@@ -240,7 +242,9 @@ impl DetailPanel {
                 l.set_hexpand(true);
                 row.append(&l);
                 if v.duration > 0 {
-                    row.append(&label(&format_secs(v.duration as f64), &["dim-label"]));
+                    let d = label(&format_secs(v.duration as f64), &["dim-label", "numeric"]);
+                    d.set_wrap(false);
+                    row.append(&d);
                 }
                 c.append(&row);
             }
@@ -259,7 +263,9 @@ impl DetailPanel {
                 let title = label(&t.title, &[]);
                 title.set_hexpand(true);
                 grid.attach(&title, 1, i, 1, 1);
-                grid.attach(&label(&t.duration, &["dim-label"]), 2, i, 1, 1);
+                let d = label(&t.duration, &["dim-label", "numeric"]);
+                d.set_wrap(false);
+                grid.attach(&d, 2, i, 1, 1);
             }
             c.append(&grid);
         }

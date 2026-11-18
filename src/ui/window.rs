@@ -44,6 +44,8 @@ const CSS: &str = "
 .note { border: 1px solid @at_rejilla; padding: 4px; }
 .mark-dot { font-size: 1.1em; }
 .playing-dot { color: @at_picos; }
+columnview > listview > row:selected .playing-dot,
+columnview > listview > row:selected label { color: @at_grafica; }
 .mark-interesa { color: @at_ok; }
 .mark-no_interesa { color: @at_clip; }
 .mark-escuchado { color: @at_aviso; }
@@ -898,15 +900,6 @@ impl App {
     }
 }
 
-impl ReleaseModel {
-    /// Repinta la fila de un disco (p. ej. al empezar o acabar de sonar).
-    pub fn refresh_row(&self, id: i64) {
-        if let Some(pos) = self.position_of(id) {
-            self.items_changed(pos, 1, 1);
-        }
-    }
-}
-
 // ---------- Columnas ----------
 
 fn text_column(
@@ -1652,7 +1645,7 @@ pub fn build(gtk_app: &gtk::Application) {
     app.center.set_hexpand(true);
     inner.append(&app.center);
     inner.append(&gtk::Separator::new(gtk::Orientation::Vertical));
-    app.detail.root.set_width_request(340);
+    app.detail.root.set_width_request(420);
     inner.append(&app.detail.root);
     let outer = gtk::Paned::builder()
         .orientation(gtk::Orientation::Horizontal)

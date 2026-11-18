@@ -198,18 +198,29 @@ impl ReleaseModel {
         let Some(pos) = self.position_of(id) else {
             return;
         };
-        let page = pos / PAGE;
-        let changed = self
+        let cached = self
             .imp()
             .cache
             .borrow()
-            .get(&page)
+            .get(&(pos / PAGE))
             .and_then(|p| p.get((pos % PAGE) as usize).cloned());
-        if let Some(obj) = changed {
+        if let Some(obj) = cached {
             obj.imp().mark.set(mark);
-            // Se saca de la caché para que la ColumnView reciba un objeto nuevo y lo repinte.
-            self.imp().cache.borrow_mut().remove(&page);
         }
+        self.repaint(pos);
+    }
+
+    /// Repinta la fila de un disco (p. ej. al empezar o acabar de sonar).
+    pub fn refresh_row(&self, id: i64) {
+        if let Some(pos) = self.position_of(id) {
+            self.repaint(pos);
+        }
+    }
+
+    /// La `ColumnView` no vuelve a pintar una fila si recibe el mismo objeto: se saca su página
+    /// de la caché para que la siguiente lectura cree objetos nuevos.
+    fn repaint(&self, pos: u32) {
+        self.imp().cache.borrow_mut().remove(&(pos / PAGE));
         self.items_changed(pos, 1, 1);
     }
 
