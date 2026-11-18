@@ -817,6 +817,34 @@ impl App {
         self.stop_playback();
     }
 
+    // ---------- Columnas ----------
+
+    /// Guarda en la configuración el orden, ancho y visibilidad de las columnas.
+    fn save_columns(&self) {
+        let cols = self.view.columns();
+        let mut state = Vec::new();
+        for i in 0..cols.n_items() {
+            let Some(c) = cols.item(i).and_downcast::<gtk::ColumnViewColumn>() else {
+                continue;
+            };
+            let Some(id) = c.id() else { continue };
+            // Todas empiezan con ancho fijo y al estirarlas GTK actualiza ese ancho.
+            let width = if c.fixed_width() > 0 {
+                c.fixed_width()
+            } else {
+                COLUMNS.iter().find(|x| x.0 == id).map_or(100, |x| x.2)
+            };
+            state.push(vault::config::ColumnState {
+                id: id.to_string(),
+                visible: c.is_visible(),
+                width,
+            });
+        }
+        let mut cfg = self.config.borrow_mut();
+        cfg.columns = state;
+        cfg.save();
+    }
+
     // ---------- Teclado ----------
 
     fn on_key(self: &Rc<Self>, key: gdk::Key, state: gdk::ModifierType) -> glib::Propagation {
@@ -906,7 +934,6 @@ fn text_column(
     app: &std::rc::Weak<App>,
     id: &str,
     title: &str,
-    expand: bool,
     width: i32,
     get: fn(&Row) -> String,
 ) -> gtk::ColumnViewColumn {
@@ -966,11 +993,13 @@ fn text_column(
             l.remove_css_class("playing-dot");
         }
     });
+    // Ninguna columna se expande: con `expand` GTK reparte el espacio sobrante entre las que
+    // lo tienen y al estirar una se movían otras. Cada una se queda en el ancho que le des.
     let col = gtk::ColumnViewColumn::builder()
         .title(title)
         .factory(&factory)
         .resizable(true)
-        .expand(expand)
+        .expand(false)
         .id(id)
         .build();
     if width > 0 {
@@ -1031,8 +1060,29 @@ fn mark_column(app: &std::rc::Weak<App>) -> gtk::ColumnViewColumn {
         .build()
 }
 
-/// (id, título, se expande, ancho fijo, texto de la celda).
-type ColumnSpec = (&'static str, &'static str, bool, i32, fn(&Row) -> String);
+/// (id, título, ancho por defecto, texto de la celda, se puede ordenar).
+type ColumnSpec = (&'static str, &'static str, i32, fn(&Row) -> String, bool);
+
+/// Columnas de la lista en su orden por defecto.
+const COLUMNS: [ColumnSpec; 8] = [
+    ("artista", "Artista", 190, |r| r.artist.clone(), true),
+    ("titulo", "Título", 220, |r| r.title.clone(), true),
+    ("sello", "Sello", 150, |r| r.label.clone(), true),
+    ("catno", "Catno", 90, |r| r.catno.clone(), true),
+    ("anyo", "Año", 52, opt_year, true),
+    ("pais", "País", 90, |r| r.country.clone(), true),
+    ("estilos", "Estilos", 160, |r| r.styles.clone(), false),
+    ("videos", "Vídeos", 62, videos_mark, false),
+];
+
+/// Menú de la cabecera (clic derecho): una casilla por columna.
+fn columns_menu() -> gtk::gio::Menu {
+    let menu = gtk::gio::Menu::new();
+    for (id, title, ..) in COLUMNS {
+        menu.append(Some(title), Some(&format!("cols.{id}")));
+    }
+    menu
+}
 
 fn opt_year(r: &Row) -> String {
     r.year.map(|y| y.to_string()).unwrap_or_default()
@@ -1147,12 +1197,26 @@ fn settings_popover(app: &Rc<App>) -> gtk::Popover {
     dir_box.append(&dir_label);
     dir_box.append(&dir_btn);
 
-    let rows: [(&str, gtk::Widget); 5] = [
+    // Columnas visibles (las mismas casillas que el clic derecho en la cabecera).
+    let cols_box = gtk::FlowBox::builder()
+        .selection_mode(gtk::SelectionMode::None)
+        .max_children_per_line(4)
+        .min_children_per_line(4)
+        .column_spacing(6)
+        .build();
+    for (id, title, ..) in COLUMNS {
+        let c = gtk::CheckButton::with_label(title);
+        c.set_action_name(Some(&format!("cols.{id}")));
+        cols_box.insert(&c, -1);
+    }
+
+    let rows: [(&str, gtk::Widget); 6] = [
         ("Tema", theme_dd.upcast()),
         ("Sonido", audio_dd.upcast()),
         ("Dispositivo", device.upcast()),
         ("Vídeo", video.upcast()),
         ("Bases nuevas en", dir_box.upcast()),
+        ("Columnas", cols_box.upcast()),
     ];
     for (i, (l, w)) in rows.into_iter().enumerate() {
         grid.attach(&dim(l), 0, i as i32, 1, 1);
@@ -1160,11 +1224,12 @@ fn settings_popover(app: &Rc<App>) -> gtk::Popover {
     }
     let help = dim(
         "Atajos: Espacio play/pausa · ←/→ ±10 s · ,/. vídeo anterior/siguiente · 1–4 marcadores \
-         (0 quita) · N/P disco siguiente/anterior · D digging · V vídeo · Alt+1–9 a maleta · Ctrl+F buscar",
+         (0 quita) · N/P disco siguiente/anterior · D digging · V vídeo · Alt+1–9 a maleta · Ctrl+F buscar · \
+         clic derecho en la cabecera para ocultar columnas",
     );
     help.set_wrap(true);
     help.set_max_width_chars(48);
-    grid.attach(&help, 0, 5, 2, 1);
+    grid.attach(&help, 0, 6, 2, 1);
     gtk::Popover::builder().child(&grid).build()
 }
 
@@ -1522,25 +1587,71 @@ pub fn build(gtk_app: &gtk::Application) {
         }
     });
 
-    // Columnas.
+    // Columnas: en el orden, ancho y visibilidad guardados.
     let weak = Rc::downgrade(&app);
-    app.view.append_column(&mark_column(&weak));
-    let cols: [ColumnSpec; 8] = [
-        ("artista", "Artista", true, 190, |r| r.artist.clone()),
-        ("titulo", "Título", true, 210, |r| r.title.clone()),
-        ("sello", "Sello", false, 150, |r| r.label.clone()),
-        ("catno", "Catno", false, 90, |r| r.catno.clone()),
-        ("anyo", "Año", false, 52, opt_year),
-        ("pais", "País", false, 90, |r| r.country.clone()),
-        ("estilos", "Estilos", false, 160, |r| r.styles.clone()),
-        ("videos", "Vídeos", false, 62, videos_mark),
-    ];
-    for (id, title, expand, width, get) in cols {
-        let c = text_column(&weak, id, title, expand, width, get);
-        if id == "estilos" || id == "videos" {
+    let header_menu = columns_menu();
+    let mark_col = mark_column(&weak);
+    mark_col.set_header_menu(Some(&header_menu));
+    app.view.append_column(&mark_col);
+    let defaults: Vec<(&str, i32)> = COLUMNS.iter().map(|c| (c.0, c.2)).collect();
+    let state = vault::config::ordered_columns(&app.config.borrow().columns, &defaults);
+    let actions = gtk::gio::SimpleActionGroup::new();
+    for st in &state {
+        let Some((id, title, _, get, sortable)) = COLUMNS.iter().find(|c| c.0 == st.id).copied()
+        else {
+            continue;
+        };
+        let c = text_column(&weak, id, title, st.width, get);
+        if !sortable {
             c.set_sorter(None::<&gtk::Sorter>);
         }
+        c.set_visible(st.visible);
+        c.set_header_menu(Some(&header_menu));
         app.view.append_column(&c);
+
+        let action = gtk::gio::SimpleAction::new_stateful(id, None, &st.visible.to_variant());
+        let (col, a) = (c.clone(), Rc::downgrade(&app));
+        action.connect_change_state(move |act, value| {
+            let Some(on) = value.and_then(|v| v.get::<bool>()) else {
+                return;
+            };
+            act.set_state(&on.to_variant());
+            col.set_visible(on);
+            if let Some(a) = a.upgrade() {
+                a.save_columns();
+            }
+        });
+        actions.add_action(&action);
+    }
+    window.insert_action_group("cols", Some(&actions));
+    // Guardar anchos y orden medio segundo después de estirar o mover una columna (no en cada
+    // píxel del arrastre).
+    {
+        let pending: Rc<RefCell<Option<glib::SourceId>>> = Rc::default();
+        let schedule = {
+            let (a, pending) = (Rc::downgrade(&app), Rc::clone(&pending));
+            move || {
+                if let Some(t) = pending.take() {
+                    t.remove();
+                }
+                let (a, p2) = (a.clone(), Rc::clone(&pending));
+                let id = glib::timeout_add_local_once(Duration::from_millis(500), move || {
+                    p2.replace(None);
+                    if let Some(a) = a.upgrade() {
+                        a.save_columns();
+                    }
+                });
+                pending.replace(Some(id));
+            }
+        };
+        let cols = app.view.columns();
+        for i in 0..cols.n_items() {
+            if let Some(c) = cols.item(i).and_downcast::<gtk::ColumnViewColumn>() {
+                let f = schedule.clone();
+                c.connect_fixed_width_notify(move |_| f());
+            }
+        }
+        cols.connect_items_changed(move |_, _, _, _| schedule());
     }
     if let Some(sorter) = app.view.sorter() {
         let weak = Rc::downgrade(&app);
@@ -1812,6 +1923,7 @@ pub fn build(gtk_app: &gtk::Application) {
     {
         let a = Rc::clone(&app);
         window.connect_close_request(move |_| {
+            a.save_columns();
             a.config.borrow().save();
             a.player.replace(None);
             glib::Propagation::Proceed

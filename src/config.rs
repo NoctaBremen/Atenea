@@ -33,6 +33,45 @@ pub struct Config {
     pub video: bool,
     /// Volumen 0–100.
     pub volume: f64,
+    /// Columnas de la lista en su orden, con ancho y si se ven (vacío = las de por defecto).
+    pub columns: Vec<ColumnState>,
+}
+
+/// Estado guardado de una columna de la lista.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ColumnState {
+    /// Identificador (`artista`, `catno`…).
+    pub id: String,
+    /// Se ve o está oculta.
+    pub visible: bool,
+    /// Ancho en píxeles.
+    pub width: i32,
+}
+
+/// Columnas en el orden guardado: las guardadas que siguen existiendo, en su orden, y después
+/// las que falten (columnas nuevas de una versión posterior) con su ancho por defecto.
+pub fn ordered_columns(saved: &[ColumnState], defaults: &[(&str, i32)]) -> Vec<ColumnState> {
+    let mut out: Vec<ColumnState> = Vec::new();
+    for s in saved {
+        if let Some((_, w)) = defaults.iter().find(|(id, _)| *id == s.id)
+            && !out.iter().any(|c| c.id == s.id)
+        {
+            out.push(ColumnState {
+                width: if s.width > 20 { s.width } else { *w },
+                ..s.clone()
+            });
+        }
+    }
+    for (id, w) in defaults {
+        if !out.iter().any(|c| c.id == *id) {
+            out.push(ColumnState {
+                id: (*id).to_owned(),
+                visible: true,
+                width: *w,
+            });
+        }
+    }
+    out
 }
 
 impl Default for Config {
@@ -45,6 +84,7 @@ impl Default for Config {
             audio_device: String::new(),
             video: false,
             volume: 80.0,
+            columns: Vec::new(),
         }
     }
 }
@@ -115,6 +155,60 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn orden_de_columnas() {
+        let defaults = [("artista", 190), ("titulo", 210), ("catno", 90)];
+        let all = ordered_columns(&[], &defaults);
+        assert_eq!(
+            all.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(),
+            ["artista", "titulo", "catno"]
+        );
+        assert!(all.iter().all(|c| c.visible));
+        let saved = vec![
+            ColumnState {
+                id: "titulo".into(),
+                visible: true,
+                width: 300,
+            },
+            ColumnState {
+                id: "vieja".into(),
+                visible: true,
+                width: 50,
+            },
+            ColumnState {
+                id: "catno".into(),
+                visible: false,
+                width: 0,
+            },
+            ColumnState {
+                id: "titulo".into(),
+                visible: false,
+                width: 10,
+            },
+        ];
+        let got = ordered_columns(&saved, &defaults);
+        assert_eq!(
+            got,
+            vec![
+                ColumnState {
+                    id: "titulo".into(),
+                    visible: true,
+                    width: 300
+                },
+                ColumnState {
+                    id: "catno".into(),
+                    visible: false,
+                    width: 90
+                },
+                ColumnState {
+                    id: "artista".into(),
+                    visible: true,
+                    width: 190
+                },
+            ]
+        );
+    }
 
     #[test]
     fn ida_y_vuelta_y_valores_por_defecto() {
