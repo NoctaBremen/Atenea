@@ -1,6 +1,6 @@
 # Maintainer: NoctaBremen
 pkgname=vault-git
-pkgver=0.1.0
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="Explorador de vinilos sobre los dumps de Discogs (Rust + GTK4)"
 arch=('x86_64' 'aarch64')
@@ -15,7 +15,7 @@ sha256sums=('SKIP')
 
 pkgver() {
   cd vault
-  printf "0.1.0.r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+  printf "1.0.0.r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
 prepare() {

@@ -1401,7 +1401,52 @@ fn settings_popover(app: &Rc<App>) -> gtk::Popover {
     help.set_wrap(true);
     help.set_max_width_chars(48);
     grid.attach(&help, 0, 6, 2, 1);
-    gtk::Popover::builder().child(&grid).build()
+    let pop = gtk::Popover::builder().child(&grid).build();
+    let about = gtk::Button::with_label("Acerca de Vault");
+    about.add_css_class("flat");
+    about.set_halign(gtk::Align::Start);
+    {
+        let (app, pop) = (Rc::clone(app), pop.clone());
+        about.connect_clicked(move |_| {
+            pop.popdown();
+            show_about(&app.window);
+        });
+    }
+    grid.attach(&about, 0, 7, 2, 1);
+    pop
+}
+
+/// Ventana «Acerca de» con los créditos.
+fn show_about(parent: &gtk::ApplicationWindow) {
+    let logo = gdk::Texture::from_bytes(&glib::Bytes::from_static(include_bytes!(
+        "../../docs/img/icono.png"
+    )))
+    .ok();
+    let d = gtk::AboutDialog::builder()
+        .transient_for(parent)
+        .modal(true)
+        .program_name("Vault")
+        .version(env!("CARGO_PKG_VERSION"))
+        .comments("Explorador de vinilos sobre los dumps de Discogs")
+        .website("https://github.com/NoctaBremen/Atenea")
+        .website_label("Repositorio en GitHub")
+        .license_type(gtk::License::MitX11)
+        .copyright("© 2026 David Gimenez")
+        .build();
+    if let Some(l) = logo {
+        d.set_logo(Some(&l));
+    }
+    d.add_credit_section("Director del proyecto", &["David Gimenez"]);
+    d.add_credit_section("Programación", &["Claude, de Anthropic"]);
+    d.add_credit_section(
+        "Agradecimientos",
+        &[
+            "Discogs, por los dumps de datos públicos",
+            "mpv y yt-dlp",
+            "Temas de color: Digityzer",
+        ],
+    );
+    d.present();
 }
 
 // ---------- Bases y búsquedas guardadas (menús) ----------

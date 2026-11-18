@@ -1,147 +1,107 @@
-# Vault
+<p align="center">
+  <img src="docs/img/icono.png" width="128" alt="Icono de Vault">
+</p>
 
-Explorador de vinilos sobre los dumps de Discogs. Rust + GTK4, minimalista, con los mismos temas
-que Spector y Digityzer (Dracula por defecto).
+<h1 align="center">Vault</h1>
 
-- Importas una vez el dump mensual de releases de [data.discogs.com](https://data.discogs.com/)
-  a SQLite, eligiendo qué entra (formato, géneros → estilos, años).
-- Buscas y filtras al instante entre millones de discos.
-- Escuchas los vídeos de YouTube de cada disco con mpv + yt-dlp (solo audio o con vídeo).
-- Marcas lo que te interesa, lo metes en maletas y exportas a CSV para comprar.
+<p align="center">
+  Explorador de vinilos sobre los dumps de Discogs.<br>
+  Rust + GTK4 · minimalista · tema Dracula y nueve más · versión 1.0
+</p>
+
+![Vault con una base abierta: filtros a la izquierda, lista de discos en el centro, detalle a la derecha y barra de reproducción abajo](docs/img/captura.png)
+
+<sub>La captura usa la base de prueba del repositorio, con artistas y sellos inventados.</sub>
+
+## Qué hace
+
+- **Importa una vez** el dump mensual de releases de [data.discogs.com](https://data.discogs.com/)
+  a una base local, eligiendo qué entra: formato, géneros → estilos y años.
+- **Busca y filtra al instante** entre millones de discos: texto libre, artista, sello, años,
+  país, géneros, estilos, formato, con vídeos, por marcador o por maleta.
+- **Escucha** los vídeos de YouTube de cada disco con mpv + yt-dlp, solo audio o con una
+  ventana de vídeo pequeña.
+- **Clasifica** uno a uno con el teclado (modo digging): Me interesa, No me interesa, Escuchado,
+  Volver a escuchar.
+- **Organiza** en maletas, guarda búsquedas con nombre y exporta a CSV para comprar.
+- **Vuelve donde lo dejaste:** filtros, orden y disco se restauran al abrir.
 
 ## Instalar
 
-Dependencias (Arch):
+Vault necesita **mpv** y **yt-dlp** del sistema para reproducir:
 
 ```bash
-sudo pacman -S --needed gtk4 mpv yt-dlp rust
+sudo pacman -S --needed mpv yt-dlp
 ```
 
-Compilar y ejecutar:
+### AppImage (lo más rápido)
+
+Descarga `Vault-x86_64.AppImage` de la página de versiones del repositorio, o constrúyelo tú
+(ver abajo), y:
 
 ```bash
-cargo build --release
-./target/release/vault
+chmod +x Vault-x86_64.AppImage
 ```
 
-O con el PKGBUILD de `packaging/` (instala también `.desktop` e icono):
+```bash
+./Vault-x86_64.AppImage
+```
+
+Si se queja de FUSE: `sudo pacman -S fuse2`, o lánzalo con `--appimage-extract-and-run`.
+
+### Arch Linux (PKGBUILD)
 
 ```bash
 cd packaging && makepkg -si
 ```
 
-### AppImage
+Instala `vault`, las herramientas de terminal, el lanzador del escritorio y el icono.
+
+### Desde el código
 
 ```bash
-packaging/build-appimage.sh
+sudo pacman -S --needed gtk4 rust
 ```
-
-Deja `dist/Vault-x86_64.AppImage` (GTK4 incluido). Descarga `linuxdeploy` y su plugin de GTK la
-primera vez a `~/.cache/vault-appimage`. mpv y yt-dlp no van dentro: se usan los del sistema.
-
-## Primer uso
-
-1. Descarga `discogs_AAAAMMDD_releases.xml.gz` de data.discogs.com (no hace falta descomprimirlo).
-2. En Vault: **Bases → Importar dump…**. Por defecto viene el preajuste **«Todo en vinilo»**
-   (todos los géneros, solo vinilo), que es el uso recomendado. Para probar antes, crea una
-   base pequeña marcando un solo estilo (p. ej. Electronic → Tech House).
-3. La importación va en segundo plano con progreso y se puede cancelar. Al acabar, la base se
-   abre sola y queda en **Bases → Recientes**.
-
-Desde la terminal también se puede importar:
 
 ```bash
-vault-importar discogs_20261101_releases.xml.gz ~/.local/share/vault/bases/todo-en-vinilo.db \
-  --nombre "Todo en vinilo" --formato Vinyl
-
-vault-importar discogs_20261101_releases.xml.gz tech-house.db \
-  --estilo "Electronic/Tech House" --formato Vinyl --desde 1995 --hasta 2005
+cargo build --release
 ```
 
-## Atajos
+```bash
+./target/release/vault
+```
 
-| Tecla | Acción |
+Para construir el AppImage: `packaging/build-appimage.sh` (lo deja en `dist/`).
+
+## Empezar en tres pasos
+
+1. Descarga `discogs_AAAAMMDD_releases.xml.gz` de data.discogs.com. Unos 10 GB; no hace falta
+   descomprimirlo.
+2. En Vault, **Bases → Importar dump…**, con el preajuste **«Todo en vinilo»** o tus propios
+   filtros. Tarda unos 8–10 minutos y se puede cancelar.
+3. Filtra, elige un disco y pulsa **Espacio** para escucharlo.
+
+Todo lo demás está en el **[manual de usuario](docs/MANUAL.md)**.
+
+## Documentación
+
+| Documento | Para qué |
 |---|---|
-| Espacio | Play/pausa (si no suena nada, pone el disco elegido) |
-| ← / → | −10 s / +10 s |
-| , / . | Vídeo anterior / siguiente del disco |
-| 1 2 3 4 | Me interesa · No me interesa · Escuchado · Volver a escuchar (otra vez = quitar; 0 quita) |
-| N / P | Disco siguiente / anterior |
-| D | Modo digging: recorre la lista en cola; 1–4 marcan **y pasan al siguiente** |
-| V | Mostrar u ocultar el vídeo |
-| Alt+1…9 | Meter el disco elegido en la maleta 1…9 |
-| Ctrl+F | Ir al buscador |
-| Doble clic / Intro | Escuchar el disco |
+| [Manual de usuario](docs/MANUAL.md) | Importar, buscar, escuchar, clasificar, maletas, atajos, ajustes |
+| [Guía de desarrollo](docs/DESARROLLO.md) | Arquitectura, esquema de la base, tests, herramientas, empaquetado |
+| [Cambios](CHANGELOG.md) | Qué trae cada versión |
 
-En el buscador, `"frase exacta"` busca la frase y las palabras sueltas buscan por prefijo
-(`kalo axis` encuentra «Kalo Tren – Axis Point»). Busca en artista, título, sello, catno,
-pistas y también en tus notas.
+## Créditos
 
-Los discos se pueden **arrastrar** desde la lista a una maleta del panel izquierdo.
+- **David Gimenez**: director del proyecto.
+- **Claude, de Anthropic**: programación.
 
-## Tu forma de trabajar: filtrar, escuchar uno a uno y clasificar
+Gracias a Discogs por publicar sus datos, a los proyectos mpv y yt-dlp, y a Digityzer, de donde
+vienen los temas de color.
 
-- **Búsquedas guardadas:** pon tus filtros (p. ej. Electronic → Tech House, 2004–2010) y en
-  **Búsquedas → Guardar la búsqueda actual…** dale un nombre. La barra de estado muestra la
-  búsqueda cargada («Tech House 2004–2010», o «(modificada)» si has tocado algo, con la opción
-  de guardar los cambios).
-- **Vuelves donde lo dejaste:** al abrir Vault se restauran los filtros, el orden y el disco en
-  el que estabas.
-- **Solo sin marcar:** muestra solo lo que aún no has clasificado; cada disco que marcas deja de
-  salir la próxima vez.
+## Licencia
 
-En el detalle de un disco, **Parecidos** (mismos estilos, ±2 años), **Más del sello** y **Más del
-artista** rellenan los filtros y buscan.
+[MIT](LICENSE) © 2026 David Gimenez.
 
-## Vídeo flotante en Hyprland / mango
-
-La ventana de vídeo de mpv usa la clase / app-id `vault-video`:
-
-```
-windowrulev2 = float, class:^(vault-video)$
-windowrulev2 = size 480 270, class:^(vault-video)$
-windowrulev2 = move 100%-500 100%-300, class:^(vault-video)$
-```
-
-## Dónde se guarda cada cosa
-
-| Qué | Dónde |
-|---|---|
-| Ajustes (tema, sonido, recientes) | `~/.config/vault/config.toml` |
-| Bases de Discogs | `~/.local/share/vault/bases/*.db` (se puede cambiar en Ajustes) |
-| Tus datos: marcadores, notas, maletas, búsquedas | `~/.local/share/vault/user.db` |
-
-Vault aprovecha la RAM: si la base cabe holgadamente en la memoria libre, la mapea entera y la
-precarga al abrirla, así las búsquedas leen de memoria desde el principio. El separador entre la
-lista y el detalle se puede mover, y se recuerda.
-
-Una base importada con una versión anterior del esquema pide volver a importar el dump (tus datos
-no se tocan). Tus datos van aparte y se enlazan por `release_id`: sirven para todas las bases y no se pierden
-si borras o vuelves a importar una base. Las bases de Discogs se abren en solo lectura.
-
-## Herramientas
-
-- `vault-importar`: importar sin interfaz (ver arriba).
-- `vault-muestra <dump.xml.gz> <salida.xml> [n]`: los primeros n discos (2000) de un dump, para
-  los tests.
-- `vault-catalogo <dump.xml.gz> > data/catalogo.tsv`: regenera el catálogo género → estilo que
-  usa el diálogo de importación.
-- `cargo run --release --example medir -- base.db`: tiempos de búsqueda sobre una base.
-
-## Desarrollo
-
-```bash
-cargo fmt && cargo clippy --all-targets -- -D warnings && cargo test
-```
-
-- La lógica (parser, importador, consultas, base de usuario, mpv, CSV) está en la biblioteca
-  `src/` y se prueba sin GTK; la interfaz está en `src/ui/`.
-- `tests/data/sample_releases.xml` es una muestra **sintética** con el formato del dump
-  (`tools/gen_sample.py`); los tests dependen solo de los 9 discos fijos de
-  `tests/data/fixed_releases.xml`. Para sustituirla por una real:
-  `vault-muestra discogs_…_releases.xml.gz tests/data/sample_releases.xml 2000`.
-- `data/catalogo.tsv` es provisional (escrito a mano): conviene regenerarlo con
-  `vault-catalogo` sobre un dump real.
-- El tema de color viene del módulo de temas de Digityzer (commit 1f7e585).
-
-Registro: `VAULT_LOG=debug vault`.
+Vault no está afiliado a Discogs. Los datos de los dumps son de Discogs y se usan según sus
+condiciones; los vídeos se reproducen desde YouTube.
