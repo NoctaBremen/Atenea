@@ -70,6 +70,9 @@ pistas y también en tus notas.
 
 Los discos se pueden **arrastrar** desde la lista a una maleta del panel izquierdo.
 
+En el detalle de un disco, **Parecidos** (mismos estilos, ±2 años), **Más del sello** y **Más del
+artista** rellenan los filtros y buscan.
+
 ## Vídeo flotante en Hyprland / mango
 
 La ventana de vídeo de mpv usa la clase / app-id `atenea-video`:
@@ -88,7 +91,8 @@ windowrulev2 = move 100%-500 100%-300, class:^(atenea-video)$
 | Bases de Discogs | `~/.local/share/atenea/bases/*.db` (se puede cambiar en Ajustes) |
 | Tus datos: marcadores, notas, maletas, búsquedas | `~/.local/share/atenea/user.db` |
 
-Tus datos van aparte y se enlazan por `release_id`: sirven para todas las bases y no se pierden
+Una base importada con una versión anterior del esquema pide volver a importar el dump (tus datos
+no se tocan). Tus datos van aparte y se enlazan por `release_id`: sirven para todas las bases y no se pierden
 si borras o vuelves a importar una base. Las bases de Discogs se abren en solo lectura.
 
 ## Herramientas

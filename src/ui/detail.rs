@@ -5,7 +5,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use atenea::db::{Detail, Mark};
+use atenea::db::{Detail, Filtros, Mark};
 use atenea::userdb::Suitcase;
 use gtk::glib;
 use gtk::prelude::*;
@@ -20,6 +20,8 @@ pub struct DetailActions {
     pub set_suitcase: Box<dyn Fn(i64, bool)>,
     /// Guardar la nota.
     pub save_note: Box<dyn Fn(i64, String)>,
+    /// Buscar con estos filtros (parecidos, más del sello, más del artista).
+    pub search: Box<dyn Fn(Filtros)>,
 }
 
 /// El panel.
@@ -41,6 +43,9 @@ fn label(text: &str, classes: &[&str]) -> gtk::Label {
         .wrap(true)
         .wrap_mode(gtk::pango::WrapMode::WordChar)
         .selectable(true)
+        // Seleccionable con el ratón pero sin foco de teclado: si no, al repintar el panel el
+        // primer texto aparece seleccionado.
+        .focusable(false)
         .css_classes(classes.to_vec())
         .build()
 }
@@ -316,6 +321,37 @@ impl DetailPanel {
             c.append(&heading("Notas de Discogs"));
             c.append(&label(&d.notes, &["detail-notes"]));
         }
+
+        // Discos parecidos (ideas del plan): rellenan los filtros y buscan.
+        let more = gtk::FlowBox::builder()
+            .selection_mode(gtk::SelectionMode::None)
+            .max_children_per_line(3)
+            .column_spacing(4)
+            .row_spacing(4)
+            .margin_top(10)
+            .build();
+        let options = [
+            (
+                "Parecidos",
+                "Mismos estilos, ±2 años",
+                d.filtros_parecidos(),
+            ),
+            ("Más del sello", "Otros discos del sello", d.filtros_sello()),
+            (
+                "Más del artista",
+                "Otros discos del artista",
+                d.filtros_artista(),
+            ),
+        ];
+        for (text, tip, f) in options {
+            let Some(f) = f else { continue };
+            let b = gtk::Button::with_label(text);
+            b.set_tooltip_text(Some(tip));
+            let actions = Rc::clone(&self.actions);
+            b.connect_clicked(move |_| (actions.search)(f.clone()));
+            more.insert(&b, -1);
+        }
+        c.append(&more);
 
         let open = gtk::LinkButton::with_label(&d.discogs_url(), "Abrir en Discogs");
         open.set_halign(gtk::Align::Start);

@@ -96,12 +96,63 @@ pub struct Detail {
     pub videos: Vec<DetailVideo>,
     /// Id del master.
     pub master_id: Option<i64>,
+    /// Artistas uno a uno (nombre que se muestra).
+    pub artists: Vec<String>,
+}
+
+/// `"texto"` para el buscador (frase exacta).
+fn phrase(s: &str) -> String {
+    format!("\"{}\"", s.replace('"', " "))
 }
 
 impl Detail {
     /// Enlace a la página del disco en Discogs.
     pub fn discogs_url(&self) -> String {
         discogs_url(self.row.id)
+    }
+
+    /// Estilos uno a uno.
+    pub fn styles(&self) -> Vec<String> {
+        self.row
+            .styles
+            .split(", ")
+            .filter(|s| !s.is_empty())
+            .map(str::to_owned)
+            .collect()
+    }
+
+    /// «Discos parecidos»: mismos estilos y años cercanos (±2). `None` si el disco no tiene
+    /// estilos.
+    pub fn filtros_parecidos(&self) -> Option<Filtros> {
+        let estilos = self.styles();
+        if estilos.is_empty() {
+            return None;
+        }
+        let y = self.row.year.and_then(|y| u16::try_from(y).ok());
+        Some(Filtros {
+            estilos,
+            anyo_desde: y.map(|y| y.saturating_sub(2)),
+            anyo_hasta: y.map(|y| y.saturating_add(2)),
+            ..Filtros::default()
+        })
+    }
+
+    /// Más discos del primer sello.
+    pub fn filtros_sello(&self) -> Option<Filtros> {
+        let (label, _) = self.labels.first()?;
+        Some(Filtros {
+            sello: phrase(label),
+            ..Filtros::default()
+        })
+    }
+
+    /// Más discos del primer artista.
+    pub fn filtros_artista(&self) -> Option<Filtros> {
+        let a = self.artists.first()?;
+        Some(Filtros {
+            artista: phrase(a),
+            ..Filtros::default()
+        })
     }
 }
 
@@ -313,7 +364,23 @@ impl Base {
                 })
             })?
             .collect::<rusqlite::Result<_>>()?;
+        let artists = self
+            .conn
+            .prepare_cached(
+                "SELECT ra.anv, a.name FROM release_artists ra JOIN artists a ON a.id = ra.artist_id
+                 WHERE ra.release_id = ?1 ORDER BY ra.position",
+            )?
+            .query_map([id], |r| {
+                let (anv, name): (String, String) = (r.get(0)?, r.get(1)?);
+                Ok(if anv.is_empty() {
+                    crate::discogs::model::strip_disambiguation(&name).to_owned()
+                } else {
+                    anv
+                })
+            })?
+            .collect::<rusqlite::Result<_>>()?;
         Ok(Some(Detail {
+            artists,
             row,
             released,
             genres,

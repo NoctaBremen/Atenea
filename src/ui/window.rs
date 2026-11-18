@@ -1425,6 +1425,7 @@ pub fn build(gtk_app: &gtk::Application) {
             let w2 = weak.clone();
             let w3 = weak.clone();
             let w4 = weak.clone();
+            let w5 = weak.clone();
             DetailPanel::new(DetailActions {
                 play_video: Box::new(move |i| {
                     if let Some(a) = w1.upgrade()
@@ -1474,6 +1475,16 @@ pub fn build(gtk_app: &gtk::Application) {
                         && let Err(e) = base.user().set_note(id, &text)
                     {
                         a.set_status(&e.to_string());
+                    }
+                }),
+                search: Box::new(move |f| {
+                    if let Some(a) = w5.upgrade() {
+                        // Tras la señal: el panel se vuelve a pintar con el resultado.
+                        let a2 = Rc::clone(&a);
+                        glib::idle_add_local_once(move || {
+                            a2.filters().set(&f);
+                            a2.run_search();
+                        });
                     }
                 }),
             })

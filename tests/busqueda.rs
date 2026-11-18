@@ -338,6 +338,28 @@ fn detalle() {
     assert_eq!(d.master_id, Some(31));
     assert_eq!(d.discogs_url(), "https://www.discogs.com/release/1");
     assert!(b.detail(999_999).unwrap().is_none());
+
+    // Discos parecidos, más del sello, más del artista.
+    let p = d.filtros_parecidos().unwrap();
+    assert_eq!(p.estilos, vec!["Tech House".to_owned()]);
+    assert_eq!((p.anyo_desde, p.anyo_hasta), (Some(1996), Some(2000)));
+    let ids = b.ids(&p, Sort::default(), None).unwrap();
+    assert!(ids.contains(&1) && !ids.contains(&4), "el 4 es de 2001");
+    let s = b
+        .ids(&d.filtros_sello().unwrap(), Sort::default(), None)
+        .unwrap();
+    assert!(s.contains(&1) && s.contains(&6));
+    let d2 = b.detail(2).unwrap().unwrap();
+    assert_eq!(
+        d2.artists,
+        vec!["Dovra Mon".to_owned(), "Velquin".to_owned()]
+    );
+    let a = b
+        .ids(&d.filtros_artista().unwrap(), Sort::default(), None)
+        .unwrap();
+    let mut a = a;
+    a.sort_unstable();
+    assert_eq!(a, vec![1, 4, 7]);
     assert!(
         b.genres()
             .unwrap()
