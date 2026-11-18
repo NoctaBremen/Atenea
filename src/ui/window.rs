@@ -1731,9 +1731,14 @@ pub fn build(gtk_app: &gtk::Application) {
             .css_classes(["placeholder-title"])
             .build(),
     );
-    welcome.append(&dim(
+    let welcome_text = dim(
         "Importa un dump de Discogs (discogs_AAAAMMDD_releases.xml.gz) o abre una base ya importada.",
-    ));
+    );
+    // Que el texto se parta: si no, su ancho limita hasta dónde se puede mover el separador.
+    welcome_text.set_wrap(true);
+    welcome_text.set_max_width_chars(40);
+    welcome_text.set_justify(gtk::Justification::Center);
+    welcome.append(&welcome_text);
     let wb = gtk::Box::new(gtk::Orientation::Horizontal, 8);
     wb.set_halign(gtk::Align::Center);
     let w_import = gtk::Button::with_label("Importar dump…");
@@ -1796,13 +1801,62 @@ pub fn build(gtk_app: &gtk::Application) {
     }
     app.suitcase_list.set_activate_on_single_click(true);
 
-    // Lista (se expande) | detalle (ancho fijo).
-    let inner = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-    app.center.set_hexpand(true);
-    inner.append(&app.center);
-    inner.append(&gtk::Separator::new(gtk::Orientation::Vertical));
-    app.detail.root.set_width_request(420);
-    inner.append(&app.detail.root);
+    // Lista | detalle, con separador movible. Al cambiar el tamaño de la ventana el detalle
+    // conserva su ancho y la lista se queda con el resto; el ancho se recuerda.
+    app.detail.root.set_width_request(300);
+    let inner = gtk::Paned::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .start_child(&app.center)
+        .end_child(&app.detail.root)
+        .resize_start_child(true)
+        .resize_end_child(false)
+        // La lista puede estrecharse (tiene barra horizontal); el detalle no baja de 300 px.
+        .shrink_start_child(true)
+        .shrink_end_child(false)
+        .wide_handle(true)
+        .build();
+    {
+        // La posición inicial solo se puede poner cuando el panel ya tiene ancho.
+        let ready = Rc::new(Cell::new(false));
+        let (a, r) = (Rc::downgrade(&app), Rc::clone(&ready));
+        inner.connect_map(move |p| {
+            let (a, r, p) = (a.clone(), Rc::clone(&r), p.clone());
+            glib::idle_add_local_once(move || {
+                if let Some(a) = a.upgrade() {
+                    let w = a.config.borrow().detail_width.max(300);
+                    if p.width() > w + 400 {
+                        p.set_position(p.width() - w);
+                    }
+                }
+                r.set(true);
+            });
+        });
+        let a = Rc::downgrade(&app);
+        let pending: Rc<RefCell<Option<glib::SourceId>>> = Rc::default();
+        inner.connect_position_notify(move |p| {
+            if !ready.get() {
+                return;
+            }
+            let Some(a) = a.upgrade() else { return };
+            let w = p.width() - p.position();
+            if w < 300 || a.config.borrow().detail_width == w {
+                return;
+            }
+            a.config.borrow_mut().detail_width = w;
+            // Guardar medio segundo después de soltar, no en cada píxel.
+            if let Some(t) = pending.take() {
+                t.remove();
+            }
+            let (a2, p2) = (Rc::downgrade(&a), Rc::clone(&pending));
+            let id = glib::timeout_add_local_once(Duration::from_millis(500), move || {
+                p2.replace(None);
+                if let Some(a) = a2.upgrade() {
+                    a.config.borrow().save();
+                }
+            });
+            pending.replace(Some(id));
+        });
+    }
     let outer = gtk::Paned::builder()
         .orientation(gtk::Orientation::Horizontal)
         .start_child(&left)

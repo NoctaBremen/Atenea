@@ -35,6 +35,8 @@ pub struct Config {
     pub volume: f64,
     /// Columnas de la lista en su orden, con ancho y si se ven (vacío = las de por defecto).
     pub columns: Vec<ColumnState>,
+    /// Ancho del panel de detalle, en píxeles.
+    pub detail_width: i32,
 }
 
 /// Estado guardado de una columna de la lista.
@@ -85,6 +87,7 @@ impl Default for Config {
             video: false,
             volume: 80.0,
             columns: Vec::new(),
+            detail_width: 420,
         }
     }
 }
