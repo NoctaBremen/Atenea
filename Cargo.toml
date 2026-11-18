@@ -6,6 +6,7 @@ default-run = "atenea"
 
 [dependencies]
 anyhow = "1.0.104"
+async-channel = "2.5.0"
 flate2 = "1.1.11"
 gtk = { version = "0.11.5", package = "gtk4", features = ["v4_12"] }
 quick-xml = "0.42.0"
