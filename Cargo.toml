@@ -2,7 +2,12 @@
 name = "atenea"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.92"
 default-run = "atenea"
+description = "Explorador de vinilos sobre los dumps de Discogs (Rust + GTK4)"
+license = "MIT"
+repository = "https://github.com/NoctaBremen/Atenea"
+authors = ["David Gimenez (director del proyecto)", "Claude, de Anthropic (programación)"]
 
 [dependencies]
 anyhow = "1.0.104"

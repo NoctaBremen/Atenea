@@ -1,0 +1,51 @@
+# Maintainer: NoctaBremen
+pkgname=atenea-git
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Explorador de vinilos sobre los dumps de Discogs (Rust + GTK4)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/NoctaBremen/Atenea"
+license=('MIT')
+depends=('gtk4' 'mpv' 'yt-dlp')
+makedepends=('cargo' 'git')
+provides=('atenea')
+conflicts=('atenea')
+source=("atenea::git+https://github.com/NoctaBremen/Atenea.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd atenea
+  printf "0.1.0.r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+prepare() {
+  cd atenea
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd atenea
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release --bins
+}
+
+check() {
+  cd atenea
+  export RUSTUP_TOOLCHAIN=stable
+  cargo test --frozen --release --lib
+}
+
+package() {
+  cd atenea
+  install -Dm755 target/release/atenea "$pkgdir/usr/bin/atenea"
+  install -Dm755 target/release/atenea-importar "$pkgdir/usr/bin/atenea-importar"
+  install -Dm755 target/release/atenea-muestra "$pkgdir/usr/bin/atenea-muestra"
+  install -Dm755 target/release/atenea-catalogo "$pkgdir/usr/bin/atenea-catalogo"
+  install -Dm644 packaging/io.github.noctabremen.Atenea.desktop \
+    "$pkgdir/usr/share/applications/io.github.noctabremen.Atenea.desktop"
+  install -Dm644 packaging/io.github.noctabremen.Atenea.svg \
+    "$pkgdir/usr/share/icons/hicolor/scalable/apps/io.github.noctabremen.Atenea.svg"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

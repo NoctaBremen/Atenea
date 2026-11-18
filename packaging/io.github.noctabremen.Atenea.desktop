@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Atenea
+GenericName=Explorador de vinilos
+Comment=Explora los dumps de Discogs, escucha los vídeos y organiza tus maletas
+Exec=atenea %f
+Icon=io.github.noctabremen.Atenea
+Terminal=false
+Categories=AudioVideo;Audio;Database;GTK;
+Keywords=discogs;vinilo;vinyl;dj;digging;
+MimeType=application/vnd.sqlite3;
+StartupWMClass=io.github.noctabremen.Atenea
