@@ -30,6 +30,15 @@ O con el PKGBUILD de `packaging/` (instala también `.desktop` e icono):
 cd packaging && makepkg -si
 ```
 
+### AppImage
+
+```bash
+packaging/build-appimage.sh
+```
+
+Deja `dist/Vault-x86_64.AppImage` (GTK4 incluido). Descarga `linuxdeploy` y su plugin de GTK la
+primera vez a `~/.cache/vault-appimage`. mpv y yt-dlp no van dentro: se usan los del sistema.
+
 ## Primer uso
 
 1. Descarga `discogs_AAAAMMDD_releases.xml.gz` de data.discogs.com (no hace falta descomprimirlo).
