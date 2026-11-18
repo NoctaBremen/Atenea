@@ -10,10 +10,13 @@ se puede sustituir por una real con:
 Los tests solo dependen de los discos fijos del principio (ids 1–9), que se mantienen a mano
 en tests/data/fixed_releases.xml.
 
-Uso: python3 tools/gen_sample.py  (determinista: misma semilla, mismo archivo)
+Uso: python3 tools/gen_sample.py [n] [salida]  (determinista: misma semilla, mismo archivo)
+Por defecto 2000 discos en tests/data/sample_releases.xml; con otros valores sirve para
+generar dumps grandes con los que medir la importación.
 """
 
 import random
+import sys
 from pathlib import Path
 from xml.sax.saxutils import escape, quoteattr
 
@@ -121,10 +124,11 @@ def main():
                    for i in range(120)]
     fixed = (ROOT / "tests/data/fixed_releases.xml").read_text(encoding="utf-8").strip()
     lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<releases>", fixed]
-    for i in range(N - fixed.count("</release>")):
+    n = int(sys.argv[1]) if len(sys.argv) > 1 else N
+    for i in range(n - fixed.count("</release>")):
         lines.append(release(rng, 100 + i, artists_pool, labels_pool))
     lines.append("</releases>")
-    out = ROOT / "tests/data/sample_releases.xml"
+    out = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "tests/data/sample_releases.xml"
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"{out} ({out.stat().st_size // 1024} KiB)")
 
