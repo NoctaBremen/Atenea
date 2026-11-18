@@ -6,6 +6,7 @@ pub mod catalog;
 pub mod config;
 pub mod db;
 pub mod discogs;
+pub mod export;
 pub mod fsutil;
 pub mod player;
 pub mod theme;
