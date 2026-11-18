@@ -117,11 +117,14 @@ CREATE VIRTUAL TABLE releases_fts USING fts5(
 
 /// Índices secundarios: se crean después de la carga masiva, que así va mucho más rápida.
 pub const INDEXES: &str = "
-CREATE INDEX idx_releases_year    ON releases(year);
-CREATE INDEX idx_releases_country ON releases(country);
-CREATE INDEX idx_releases_artist  ON releases(artist_line COLLATE NOCASE);
-CREATE INDEX idx_releases_title   ON releases(title COLLATE NOCASE);
-CREATE INDEX idx_releases_label   ON releases(label_line COLLATE NOCASE);
+-- Los índices de orden cubren el ORDER BY completo de cada columna de la lista (incluido el
+-- desempate por id), para que la lista entera salga ordenada sin ordenar en memoria.
+CREATE INDEX idx_releases_year    ON releases(year IS NULL, year, id);
+CREATE INDEX idx_releases_country ON releases(country COLLATE NOCASE, id);
+CREATE INDEX idx_releases_artist  ON releases(artist_line COLLATE NOCASE, title COLLATE NOCASE, id);
+CREATE INDEX idx_releases_title   ON releases(title COLLATE NOCASE, id);
+CREATE INDEX idx_releases_label   ON releases(label_line COLLATE NOCASE, catno_line COLLATE NOCASE, id);
+CREATE INDEX idx_releases_catno   ON releases(catno_line COLLATE NOCASE, id);
 CREATE INDEX idx_release_artists_artist ON release_artists(artist_id);
 CREATE INDEX idx_release_labels_label   ON release_labels(label_id);
 CREATE INDEX idx_release_genres_genre   ON release_genres(genre_id, release_id);
@@ -168,7 +171,7 @@ mod tests {
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(n, 12);
+        assert_eq!(n, 13);
         // FTS5 disponible (SQLite incluido con rusqlite).
         c.execute(
             "INSERT INTO releases_fts(rowid, artists, title, labels, catnos, tracks)

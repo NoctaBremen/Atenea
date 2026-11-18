@@ -8,3 +8,4 @@ pub mod db;
 pub mod discogs;
 pub mod fsutil;
 pub mod theme;
+pub mod userdb;
