@@ -37,6 +37,24 @@ pub struct Config {
     pub columns: Vec<ColumnState>,
     /// Ancho del panel de detalle, en píxeles.
     pub detail_width: i32,
+    /// Dónde lo dejaste: se restaura al volver a abrir esa base.
+    pub session: Option<Session>,
+}
+
+/// Estado de trabajo de la última sesión con una base.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Session {
+    /// Base a la que se refiere.
+    pub base: PathBuf,
+    /// Filtros puestos.
+    pub filtros: crate::db::query::Filtros,
+    /// Orden de la lista.
+    pub sort: crate::db::query::Sort,
+    /// Disco elegido.
+    pub selected: Option<i64>,
+    /// Búsqueda guardada cargada (id), si la había.
+    pub saved_search: Option<i64>,
 }
 
 /// Estado guardado de una columna de la lista.
@@ -88,6 +106,7 @@ impl Default for Config {
             volume: 80.0,
             columns: Vec::new(),
             detail_width: 420,
+            session: None,
         }
     }
 }
@@ -241,6 +260,26 @@ mod tests {
         assert_eq!(Config::load_from(&p), c);
         std::fs::write(&p, "theme = 3\n").unwrap();
         assert_eq!(Config::load_from(&p), Config::default());
+        std::fs::write(&p, "theme = \"gruvbox-dark\"\n").unwrap();
+        c.session = Some(Session {
+            base: "/b/uno.db".into(),
+            filtros: crate::db::query::Filtros {
+                estilos: vec!["Tech House".into()],
+                anyo_desde: Some(2004),
+                anyo_hasta: Some(2010),
+                sin_marcar: true,
+                ..Default::default()
+            },
+            selected: Some(42),
+            saved_search: Some(3),
+            ..Default::default()
+        });
+        c.save_to(&p).unwrap();
+        assert_eq!(
+            Config::load_from(&p),
+            c,
+            "la sesión se guarda y se recupera"
+        );
         std::fs::write(&p, "theme = \"gruvbox-dark\"\n").unwrap();
         let old = Config::load_from(&p);
         assert_eq!(old.theme, "gruvbox-dark");

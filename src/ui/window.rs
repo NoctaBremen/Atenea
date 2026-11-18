@@ -16,7 +16,7 @@ use gtk::glib;
 use gtk::prelude::*;
 use vault::config::Config;
 use vault::db::base::DetailVideo;
-use vault::db::{Base, Mark, Row, Sort, SortKey};
+use vault::db::{Base, Filtros, Mark, Row, Sort, SortKey};
 use vault::player::{AudioServer, Player, PlayerEvent, PlayerOptions};
 use vault::theme::{THEMES, Theme};
 use vault::userdb::{self, SUITCASE_COLORS};
@@ -114,6 +114,12 @@ pub struct App {
     center: gtk::Stack,
     /// Precarga en curso de la base abierta (se cancela al cambiar de base).
     warming: RefCell<Option<std::sync::Arc<std::sync::atomic::AtomicBool>>>,
+    /// Búsqueda guardada cargada: (id, nombre, filtros, orden) tal como se guardó.
+    active_search: RefCell<Option<(i64, String, Filtros, Sort)>>,
+    /// Disco que hay que elegir cuando lleguen los resultados (al restaurar la sesión).
+    pending_select: Cell<Option<i64>>,
+    /// Guardado diferido de la sesión al moverse por la lista.
+    session_timer: RefCell<Option<glib::SourceId>>,
 }
 
 fn dim(text: &str) -> gtk::Label {
@@ -176,6 +182,7 @@ impl App {
                 }
                 self.center.set_visible_child_name("list");
                 self.detail().show_empty("Elige un disco de la lista.");
+                self.restore_session(path);
                 self.run_search();
             }
             Err(e) => {
@@ -249,6 +256,114 @@ impl App {
         super::import::open(&self.window, dir, move |p| this.open_base(&p));
     }
 
+    // ---------- Sesión: volver donde lo dejaste ----------
+
+    /// Pone los filtros, el orden, la búsqueda guardada y el disco de la última sesión con
+    /// esta base. Con otra base, empieza sin filtros.
+    fn restore_session(&self, path: &Path) {
+        let session = self
+            .config
+            .borrow()
+            .session
+            .clone()
+            .filter(|s| s.base == path);
+        self.active_search.replace(None);
+        let Some(s) = session else {
+            self.filters().set(&Filtros::default());
+            self.apply_sort(Sort::default());
+            return;
+        };
+        self.filters().set(&s.filtros);
+        self.apply_sort(s.sort);
+        self.pending_select.set(s.selected);
+        if let (Some(id), Some(base)) = (s.saved_search, self.base()) {
+            let found = base
+                .user()
+                .saved_searches()
+                .unwrap_or_default()
+                .into_iter()
+                .find(|x| x.id == id);
+            if let Some(x) = found {
+                self.active_search
+                    .replace(Some((x.id, x.name, x.filtros, x.sort)));
+            }
+        }
+    }
+
+    /// Guarda en la configuración dónde estás (filtros, orden, disco, búsqueda guardada).
+    fn save_session(&self) {
+        let Some(base) = self.base() else { return };
+        let session = vault::config::Session {
+            base: base.info().path.clone(),
+            filtros: self.filters().get(),
+            sort: self.sort.get(),
+            selected: self.selected(),
+            saved_search: self.active_search.borrow().as_ref().map(|a| a.0),
+        };
+        let mut c = self.config.borrow_mut();
+        if c.session.as_ref() != Some(&session) {
+            c.session = Some(session);
+            c.save();
+        }
+    }
+
+    /// Guarda la sesión un segundo después del último movimiento por la lista.
+    fn save_session_later(self: &Rc<Self>) {
+        if let Some(t) = self.session_timer.take() {
+            t.remove();
+        }
+        let weak = Rc::downgrade(self);
+        let id = glib::timeout_add_local_once(Duration::from_secs(1), move || {
+            if let Some(a) = weak.upgrade() {
+                a.session_timer.replace(None);
+                a.save_session();
+            }
+        });
+        self.session_timer.replace(Some(id));
+    }
+
+    /// Pone el orden en la cabecera de la lista (y en `self.sort`). Cambiar el orden de la
+    /// cabecera lanza una búsqueda por su cuenta.
+    fn apply_sort(&self, sort: Sort) {
+        self.sort.set(sort);
+        let id = match sort.key {
+            SortKey::Artista => "artista",
+            SortKey::Titulo => "titulo",
+            SortKey::Sello => "sello",
+            SortKey::Catno => "catno",
+            SortKey::Anyo => "anyo",
+            SortKey::Pais => "pais",
+            SortKey::Id => "",
+        };
+        let cols = self.view.columns();
+        let col = (0..cols.n_items())
+            .filter_map(|i| cols.item(i).and_downcast::<gtk::ColumnViewColumn>())
+            .find(|c| c.id().is_some_and(|x| x == id));
+        let order = if sort.desc {
+            gtk::SortType::Descending
+        } else {
+            gtk::SortType::Ascending
+        };
+        if sort == Sort::default() {
+            self.view
+                .sort_by_column(None::<&gtk::ColumnViewColumn>, order);
+        } else {
+            self.view.sort_by_column(col.as_ref(), order);
+        }
+    }
+
+    /// Texto de la búsqueda guardada activa para la barra de estado.
+    fn active_search_label(&self) -> Option<String> {
+        let a = self.active_search.borrow();
+        let (_, name, filtros, sort) = a.as_ref()?;
+        let modified = self.filters().get() != *filtros || self.sort.get() != *sort;
+        Some(if modified {
+            format!("«{name}» (modificada)")
+        } else {
+            format!("«{name}»")
+        })
+    }
+
     // ---------- Búsqueda (T09–T12) ----------
 
     fn schedule_search(self: &Rc<Self>) {
@@ -288,18 +403,40 @@ impl App {
         match r.result {
             Ok(ids) => {
                 let n = ids.len();
-                let keep = self.detail().current();
+                // El disco a dejar elegido: el de la sesión anterior (al abrir) o el que
+                // estaba en el detalle, si siguen en la lista.
+                let restoring = self.pending_select.take();
+                let keep = restoring.or(self.detail().current());
                 self.model.set_ids(ids);
-                // Si el disco que estaba en el detalle sigue en la lista, se queda seleccionado.
                 match keep.and_then(|id| self.model.position_of(id)) {
+                    // Al restaurar la sesión se lleva la lista hasta el disco; si no, se elige
+                    // sin mover el foco (el usuario puede estar escribiendo en el buscador).
+                    Some(pos) if restoring.is_some() => {
+                        self.selection.set_selected(pos);
+                        // Llevar la lista hasta el disco cuando ya esté dibujada: hacerlo antes
+                        // dejaba filas en blanco.
+                        let weak = Rc::downgrade(self);
+                        glib::idle_add_local_once(move || {
+                            if let Some(a) = weak.upgrade()
+                                && a.selection.selected() == pos
+                            {
+                                a.select_position(pos);
+                            }
+                        });
+                    }
                     Some(pos) => self.selection.set_selected(pos),
                     None => self.selection.set_selected(gtk::INVALID_LIST_POSITION),
                 }
-                self.set_status(&format!(
+                let mut status = format!(
                     "{} discos · {} ms",
                     super::import::thousands(n as u64),
                     r.elapsed.as_millis()
-                ));
+                );
+                if let Some(name) = self.active_search_label() {
+                    status = format!("{name} · {status}");
+                }
+                self.set_status(&status);
+                self.save_session();
             }
             Err(e) => self.set_status(&format!("Error en la búsqueda: {e}")),
         }
@@ -345,6 +482,7 @@ impl App {
         let Some(id) = self.selected() else {
             return;
         };
+        self.save_session_later();
         let u = base.user();
         match base.detail(id) {
             Ok(Some(d)) => {
@@ -1365,15 +1503,40 @@ fn searches_popover(app: &Rc<App>, menu: &gtk::MenuButton) -> gtk::Popover {
                     let a = Rc::clone(&app);
                     dialogs::ask_text(&app.window, "Guardar búsqueda", "", "Guardar", move |n| {
                         let base = a.base().ok_or("No hay base abierta")?;
-                        base.user()
-                            .save_search(&n, &a.filters().get(), a.sort.get())
+                        let (f, so) = (a.filters().get(), a.sort.get());
+                        let id = base
+                            .user()
+                            .save_search(&n, &f, so)
                             .map_err(|e| e.to_string())?;
+                        a.active_search.replace(Some((id, n.clone(), f, so)));
                         a.set_status(&format!("Búsqueda «{n}» guardada"));
+                        a.save_session();
                         Ok(())
                     });
                 });
             }
             b.append(&save);
+            // Con una búsqueda cargada y cambiada: guardar los cambios con el mismo nombre.
+            let active = app.active_search.borrow().clone();
+            if let Some((_, name, filtros, sort)) = active
+                && (app.filters().get() != filtros || app.sort.get() != sort)
+            {
+                let upd = gtk::Button::with_label(&format!("Guardar cambios en «{name}»"));
+                let (app, pop) = (Rc::clone(&app), pop.clone());
+                upd.connect_clicked(move |_| {
+                    pop.popdown();
+                    let Some(base) = app.base() else { return };
+                    let (f, so) = (app.filters().get(), app.sort.get());
+                    match base.user().save_search(&name, &f, so) {
+                        Ok(id) => {
+                            app.active_search.replace(Some((id, name.clone(), f, so)));
+                            app.set_status(&format!("Búsqueda «{name}» actualizada"));
+                        }
+                        Err(e) => app.set_status(&e.to_string()),
+                    }
+                });
+                b.append(&upd);
+            }
             let saved = base.user().saved_searches().unwrap_or_default();
             if saved.is_empty() {
                 b.append(&dim("No hay búsquedas guardadas."));
@@ -1395,10 +1558,13 @@ fn searches_popover(app: &Rc<App>, menu: &gtk::MenuButton) -> gtk::Popover {
                 {
                     let (app, pop, filtros, sort) =
                         (Rc::clone(&app), pop.clone(), s.filtros.clone(), s.sort);
+                    let (id, name) = (s.id, s.name.clone());
                     load.connect_clicked(move |_| {
                         pop.popdown();
+                        app.active_search
+                            .replace(Some((id, name.clone(), filtros.clone(), sort)));
                         app.filters().set(&filtros);
-                        app.sort.set(sort);
+                        app.apply_sort(sort);
                         app.run_search();
                     });
                 }
@@ -1618,6 +1784,9 @@ pub fn build(gtk_app: &gtk::Application) {
             now: RefCell::default(),
             center,
             warming: RefCell::default(),
+            active_search: RefCell::default(),
+            pending_select: Cell::new(None),
+            session_timer: RefCell::default(),
         }
     });
 
@@ -1878,7 +2047,7 @@ pub fn build(gtk_app: &gtk::Application) {
     bases_btn.set_popover(Some(&bases_popover(&app, &bases_btn)));
     header.pack_start(&bases_btn);
     let searches_btn = gtk::MenuButton::builder()
-        .icon_name("edit-find-symbolic")
+        .label("Búsquedas")
         .tooltip_text("Búsquedas guardadas")
         .build();
     searches_btn.set_popover(Some(&searches_popover(&app, &searches_btn)));
@@ -2011,6 +2180,7 @@ pub fn build(gtk_app: &gtk::Application) {
     {
         let a = Rc::clone(&app);
         window.connect_close_request(move |_| {
+            a.save_session();
             a.save_columns();
             a.config.borrow().save();
             a.player.replace(None);

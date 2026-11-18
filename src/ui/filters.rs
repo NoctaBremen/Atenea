@@ -116,6 +116,7 @@ pub struct FilterPanel {
     videos: gtk::CheckButton,
     marcas: Vec<(Mark, gtk::ToggleButton)>,
     ocultar_no: gtk::CheckButton,
+    sin_marcar: gtk::CheckButton,
     maleta: gtk::DropDown,
     maletas: RefCell<Vec<i64>>,
     on_change: Rc<dyn Fn()>,
@@ -216,6 +217,12 @@ impl FilterPanel {
         b.append(&mbox);
         let ocultar_no = gtk::CheckButton::with_label("Ocultar «No me interesa»");
         b.append(&ocultar_no);
+        let sin_marcar = gtk::CheckButton::with_label("Solo sin marcar (por clasificar)");
+        sin_marcar.set_tooltip_text(Some(
+            "Muestra solo los discos que aún no tienen marcador: al clasificar uno, la próxima \
+             vez ya no aparece",
+        ));
+        b.append(&sin_marcar);
 
         b.append(&section_label("Maleta"));
         let maleta = gtk::DropDown::from_strings(&["Todas"]);
@@ -246,6 +253,7 @@ impl FilterPanel {
             videos,
             marcas,
             ocultar_no,
+            sin_marcar,
             maleta,
             maletas: RefCell::default(),
             on_change: Rc::clone(&on_change),
@@ -275,7 +283,7 @@ impl FilterPanel {
             let cb = Rc::clone(&on_change);
             t.connect_toggled(move |_| cb());
         }
-        for c in [&this.videos, &this.ocultar_no] {
+        for c in [&this.videos, &this.ocultar_no, &this.sin_marcar] {
             let cb = Rc::clone(&on_change);
             c.connect_toggled(move |_| cb());
         }
@@ -389,6 +397,7 @@ impl FilterPanel {
                 .map(|(m, _)| *m)
                 .collect(),
             ocultar_no_interesa: self.ocultar_no.is_active(),
+            sin_marcar: self.sin_marcar.is_active(),
             maleta: self.selected_suitcase(),
         }
     }
@@ -419,6 +428,7 @@ impl FilterPanel {
             t.set_active(f.marcadores.contains(m));
         }
         self.ocultar_no.set_active(f.ocultar_no_interesa);
+        self.sin_marcar.set_active(f.sin_marcar);
         self.select_suitcase(f.maleta);
         self.set_quiet(false);
     }

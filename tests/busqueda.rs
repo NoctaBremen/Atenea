@@ -398,6 +398,12 @@ fn datos_de_usuario_en_los_filtros() {
     });
     assert_eq!(hidden.len(), 1999);
     assert!(!hidden.contains(&2));
+    let pending = with(Filtros {
+        sin_marcar: true,
+        ..Default::default()
+    });
+    assert_eq!(pending.len(), 1997);
+    assert!(!pending.contains(&1) && !pending.contains(&2) && !pending.contains(&3));
     assert_eq!(
         with(Filtros {
             maleta: Some(m),

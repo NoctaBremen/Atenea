@@ -79,6 +79,17 @@ pistas y también en tus notas.
 
 Los discos se pueden **arrastrar** desde la lista a una maleta del panel izquierdo.
 
+## Tu forma de trabajar: filtrar, escuchar uno a uno y clasificar
+
+- **Búsquedas guardadas:** pon tus filtros (p. ej. Electronic → Tech House, 2004–2010) y en
+  **Búsquedas → Guardar la búsqueda actual…** dale un nombre. La barra de estado muestra la
+  búsqueda cargada («Tech House 2004–2010», o «(modificada)» si has tocado algo, con la opción
+  de guardar los cambios).
+- **Vuelves donde lo dejaste:** al abrir Vault se restauran los filtros, el orden y el disco en
+  el que estabas.
+- **Solo sin marcar:** muestra solo lo que aún no has clasificado; cada disco que marcas deja de
+  salir la próxima vez.
+
 En el detalle de un disco, **Parecidos** (mismos estilos, ±2 años), **Más del sello** y **Más del
 artista** rellenan los filtros y buscan.
 
@@ -99,6 +110,10 @@ windowrulev2 = move 100%-500 100%-300, class:^(vault-video)$
 | Ajustes (tema, sonido, recientes) | `~/.config/vault/config.toml` |
 | Bases de Discogs | `~/.local/share/vault/bases/*.db` (se puede cambiar en Ajustes) |
 | Tus datos: marcadores, notas, maletas, búsquedas | `~/.local/share/vault/user.db` |
+
+Vault aprovecha la RAM: si la base cabe holgadamente en la memoria libre, la mapea entera y la
+precarga al abrirla, así las búsquedas leen de memoria desde el principio. El separador entre la
+lista y el detalle se puede mover, y se recuerda.
 
 Una base importada con una versión anterior del esquema pide volver a importar el dump (tus datos
 no se tocan). Tus datos van aparte y se enlazan por `release_id`: sirven para todas las bases y no se pierden

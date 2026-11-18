@@ -135,6 +135,8 @@ pub struct Filtros {
     pub marcadores: Vec<Mark>,
     /// Ocultar los marcados «No me interesa».
     pub ocultar_no_interesa: bool,
+    /// Solo los discos sin ningún marcador (lo que queda por clasificar).
+    pub sin_marcar: bool,
     /// Solo los discos de esta maleta.
     pub maleta: Option<i64>,
 }
@@ -288,6 +290,9 @@ pub fn where_clause(f: &Filtros) -> (Vec<String>, Vec<Value>) {
         );
         ps.push(Value::Text(Mark::NoInteresa.key().into()));
     }
+    if f.sin_marcar {
+        conds.push("NOT EXISTS (SELECT 1 FROM u.marks m WHERE m.release_id = r.id)".into());
+    }
     if let Some(id) = f.maleta {
         conds
             .push("r.id IN (SELECT release_id FROM u.suitcase_items WHERE suitcase_id = ?)".into());
@@ -317,7 +322,10 @@ pub fn ids_query(f: &Filtros, sort: Sort, limit: Option<usize>) -> Query {
     // con acceso aleatorio cuesta lo mismo que recorrer toda la base (medido con un millón de
     // discos: 1,8 s contra 0,16 s para 65 000 resultados). El `+` unario impide que SQLite use
     // el índice para el `ORDER BY`.
-    let nearly_all = conds.is_empty() || (conds.len() == 1 && f.ocultar_no_interesa);
+    // «Ocultar No me interesa» y «Sin marcar» quitan pocos discos (lo marcado es una parte
+    // pequeña de la base): solos, también dejan casi todo.
+    let near_all_conds = usize::from(f.ocultar_no_interesa) + usize::from(f.sin_marcar);
+    let nearly_all = conds.len() == near_all_conds;
     let prefix = if nearly_all { "" } else { "+" };
     sql.push_str(
         &sort
