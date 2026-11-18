@@ -1,27 +1,23 @@
+//! Atenea: explorador de vinilos sobre los dumps de Discogs.
+
+mod config;
+mod fsutil;
+mod theme;
+mod ui;
+
+use gtk::glib;
 use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow, Label, glib};
 
 const APP_ID: &str = "io.github.noctabremen.Atenea";
 
 fn main() -> glib::ExitCode {
-    let app = Application::builder().application_id(APP_ID).build();
-    app.connect_activate(build_ui);
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_env("ATENEA_LOG")
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn")),
+        )
+        .init();
+    let app = gtk::Application::builder().application_id(APP_ID).build();
+    app.connect_activate(ui::window::build);
     app.run()
-}
-
-fn build_ui(app: &Application) {
-    let placeholder = Label::builder()
-        .label("Atenea")
-        .css_classes(["title-1"])
-        .build();
-
-    let window = ApplicationWindow::builder()
-        .application(app)
-        .title("Atenea")
-        .default_width(1200)
-        .default_height(800)
-        .child(&placeholder)
-        .build();
-
-    window.present();
 }
