@@ -1,0 +1,283 @@
+# Catálogo género → estilo de Discogs (PROVISIONAL: escrito a mano).
+# Se regenera desde un dump real con: cargo run --release --bin atenea-catalogo -- <dump.xml.gz> > data/catalogo.tsv
+Blues	Boogie Woogie
+Blues	Chicago Blues
+Blues	Country Blues
+Blues	Delta Blues
+Blues	Electric Blues
+Blues	Harmonica Blues
+Blues	Jump Blues
+Blues	Louisiana Blues
+Blues	Modern Electric Blues
+Blues	Piano Blues
+Blues	Rhythm & Blues
+Blues	Texas Blues
+Brass & Military	Brass Band
+Brass & Military	Marches
+Brass & Military	Military
+Children's	Educational
+Children's	Nursery Rhymes
+Children's	Story
+Classical	Baroque
+Classical	Choral
+Classical	Classical
+Classical	Contemporary
+Classical	Impressionist
+Classical	Medieval
+Classical	Modern
+Classical	Neo-Classical
+Classical	Neo-Romantic
+Classical	Opera
+Classical	Post-Modern
+Classical	Renaissance
+Classical	Romantic
+Electronic	Abstract
+Electronic	Acid
+Electronic	Acid House
+Electronic	Acid Jazz
+Electronic	Ambient
+Electronic	Ambient House
+Electronic	Bassline
+Electronic	Beatdown
+Electronic	Berlin-School
+Electronic	Big Beat
+Electronic	Bleep
+Electronic	Breakbeat
+Electronic	Breakcore
+Electronic	Breaks
+Electronic	Broken Beat
+Electronic	Chillwave
+Electronic	Chiptune
+Electronic	Dance-pop
+Electronic	Dark Ambient
+Electronic	Darkwave
+Electronic	Deep House
+Electronic	Deep Techno
+Electronic	Disco
+Electronic	Downtempo
+Electronic	Drone
+Electronic	Drum n Bass
+Electronic	Dub
+Electronic	Dub Techno
+Electronic	Dubstep
+Electronic	EBM
+Electronic	Electro
+Electronic	Electro House
+Electronic	Electroclash
+Electronic	Euro House
+Electronic	Euro-Disco
+Electronic	Eurobeat
+Electronic	Experimental
+Electronic	Footwork
+Electronic	Freestyle
+Electronic	Future Jazz
+Electronic	Gabber
+Electronic	Garage House
+Electronic	Ghetto House
+Electronic	Glitch
+Electronic	Goa Trance
+Electronic	Grime
+Electronic	Hard House
+Electronic	Hard Techno
+Electronic	Hard Trance
+Electronic	Hardcore
+Electronic	Hardstyle
+Electronic	Hi NRG
+Electronic	Hip Hop
+Electronic	Hip-House
+Electronic	House
+Electronic	IDM
+Electronic	Industrial
+Electronic	Italo House
+Electronic	Italo-Disco
+Electronic	Jazzdance
+Electronic	Juke
+Electronic	Jungle
+Electronic	Leftfield
+Electronic	Minimal
+Electronic	Minimal Techno
+Electronic	Musique Concrète
+Electronic	Noise
+Electronic	Nu-Disco
+Electronic	Progressive Breaks
+Electronic	Progressive House
+Electronic	Progressive Trance
+Electronic	Psy-Trance
+Electronic	Rhythmic Noise
+Electronic	Synth-pop
+Electronic	Tech House
+Electronic	Techno
+Electronic	Trance
+Electronic	Tribal
+Electronic	Tribal House
+Electronic	Trip Hop
+Electronic	UK Garage
+Electronic	Vaporwave
+Folk, World, & Country	African
+Folk, World, & Country	Bluegrass
+Folk, World, & Country	Cajun
+Folk, World, & Country	Celtic
+Folk, World, & Country	Country
+Folk, World, & Country	Fado
+Folk, World, & Country	Flamenco
+Folk, World, & Country	Folk
+Folk, World, & Country	Gospel
+Folk, World, & Country	Highlife
+Folk, World, & Country	Hindustani
+Folk, World, & Country	Honky Tonk
+Folk, World, & Country	Klezmer
+Folk, World, & Country	Polka
+Folk, World, & Country	Rebetiko
+Folk, World, & Country	Soukous
+Folk, World, & Country	Volksmusik
+Funk / Soul	Afrobeat
+Funk / Soul	Boogie
+Funk / Soul	Contemporary R&B
+Funk / Soul	Disco
+Funk / Soul	Free Funk
+Funk / Soul	Funk
+Funk / Soul	Gospel
+Funk / Soul	Neo Soul
+Funk / Soul	New Jack Swing
+Funk / Soul	P.Funk
+Funk / Soul	Rhythm & Blues
+Funk / Soul	Soul
+Funk / Soul	Swingbeat
+Hip Hop	Bass Music
+Hip Hop	Boom Bap
+Hip Hop	Bounce
+Hip Hop	Conscious
+Hip Hop	Cut-up/DJ
+Hip Hop	Electro
+Hip Hop	G-Funk
+Hip Hop	Gangsta
+Hip Hop	Grime
+Hip Hop	Hardcore Hip-Hop
+Hip Hop	Horrorcore
+Hip Hop	Instrumental
+Hip Hop	Jazzy Hip-Hop
+Hip Hop	Miami Bass
+Hip Hop	Pop Rap
+Hip Hop	Ragga HipHop
+Hip Hop	Trap
+Hip Hop	Trip Hop
+Hip Hop	Turntablism
+Jazz	Afro-Cuban Jazz
+Jazz	Avant-garde Jazz
+Jazz	Big Band
+Jazz	Bop
+Jazz	Bossa Nova
+Jazz	Contemporary Jazz
+Jazz	Cool Jazz
+Jazz	Dixieland
+Jazz	Easy Listening
+Jazz	Free Improvisation
+Jazz	Free Jazz
+Jazz	Fusion
+Jazz	Gypsy Jazz
+Jazz	Hard Bop
+Jazz	Jazz-Funk
+Jazz	Jazz-Rock
+Jazz	Latin Jazz
+Jazz	Modal
+Jazz	Post Bop
+Jazz	Smooth Jazz
+Jazz	Soul-Jazz
+Jazz	Spiritual Jazz
+Jazz	Swing
+Latin	Afro-Cuban
+Latin	Bachata
+Latin	Bolero
+Latin	Bossanova
+Latin	Cha-Cha
+Latin	Cumbia
+Latin	Guaguancó
+Latin	Latin Jazz
+Latin	Mambo
+Latin	Merengue
+Latin	Música Popular Brasileira
+Latin	Nueva Cancion
+Latin	Reggaeton
+Latin	Rumba
+Latin	Salsa
+Latin	Samba
+Latin	Son
+Latin	Tango
+Non-Music	Comedy
+Non-Music	Dialogue
+Non-Music	Field Recording
+Non-Music	Interview
+Non-Music	Monolog
+Non-Music	Poetry
+Non-Music	Political
+Non-Music	Radioplay
+Non-Music	Sound Collage
+Non-Music	Speech
+Non-Music	Spoken Word
+Pop	Ballad
+Pop	Bubblegum
+Pop	Chanson
+Pop	City Pop
+Pop	Europop
+Pop	Indie Pop
+Pop	J-pop
+Pop	K-pop
+Pop	Light Music
+Pop	Schlager
+Pop	Vocal
+Reggae	Calypso
+Reggae	Dancehall
+Reggae	Dub
+Reggae	Lovers Rock
+Reggae	Ragga
+Reggae	Reggae
+Reggae	Reggae-Pop
+Reggae	Rocksteady
+Reggae	Roots Reggae
+Reggae	Ska
+Reggae	Soca
+Rock	Acid Rock
+Rock	Alternative Rock
+Rock	Art Rock
+Rock	Black Metal
+Rock	Blues Rock
+Rock	Classic Rock
+Rock	Coldwave
+Rock	Death Metal
+Rock	Doom Metal
+Rock	Emo
+Rock	Experimental
+Rock	Folk Rock
+Rock	Garage Rock
+Rock	Glam
+Rock	Goth Rock
+Rock	Grunge
+Rock	Hard Rock
+Rock	Hardcore
+Rock	Heavy Metal
+Rock	Indie Rock
+Rock	Krautrock
+Rock	Lo-Fi
+Rock	Math Rock
+Rock	New Wave
+Rock	Noise
+Rock	Pop Rock
+Rock	Post Rock
+Rock	Post-Punk
+Rock	Power Pop
+Rock	Prog Rock
+Rock	Psychedelic Rock
+Rock	Punk
+Rock	Rock & Roll
+Rock	Rockabilly
+Rock	Shoegaze
+Rock	Soft Rock
+Rock	Southern Rock
+Rock	Space Rock
+Rock	Stoner Rock
+Rock	Surf
+Rock	Thrash
+Stage & Screen	Musical
+Stage & Screen	Score
+Stage & Screen	Soundtrack
+Stage & Screen	Theme
