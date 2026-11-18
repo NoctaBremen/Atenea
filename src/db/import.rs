@@ -396,8 +396,8 @@ impl Writer {
         tx.prepare_cached(
             "INSERT OR REPLACE INTO releases(id, title, artist_line, label_line, catno_line,
                 format_line, genre_line, style_line, country, released, year, notes, master_id,
-                n_videos)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+                n_videos, fmt_flags)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
         )?
         .execute(params![
             id,
@@ -414,6 +414,11 @@ impl Writer {
             r.notes,
             r.master_id.map(|m| m as i64),
             r.videos.len() as i64,
+            schema::format_flags(
+                r.formats
+                    .iter()
+                    .flat_map(|f| f.descriptions.iter().map(String::as_str))
+            ),
         ])?;
 
         for (i, a) in r.artists.iter().enumerate() {

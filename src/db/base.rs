@@ -111,17 +111,7 @@ pub fn discogs_url(id: i64) -> String {
 }
 
 /// Descripciones de formato que ofrece el panel de filtros.
-pub const FORMAT_DESCRIPTIONS: [&str; 8] = [
-    "LP",
-    "12\"",
-    "10\"",
-    "7\"",
-    "EP",
-    "Single",
-    "Album",
-    "Compilation",
-];
-
+pub use super::schema::FORMAT_DESCRIPTIONS;
 /// Una base abierta.
 pub struct Base {
     conn: Connection,
@@ -137,6 +127,9 @@ pub enum OpenError {
     /// No es una base de Atenea.
     #[error("{0} no es una base de Atenea")]
     NotABase(String),
+    /// Base de una versión anterior de Atenea.
+    #[error("{0} se importó con una versión anterior de Atenea: vuelve a importar el dump")]
+    Outdated(String),
 }
 
 const ROW_COLS: &str = "id, artist_line, title, label_line, catno_line, year, country, style_line, format_line, n_videos";
@@ -188,6 +181,10 @@ impl Base {
             .map_err(|_| OpenError::NotABase(path.display().to_string()))?;
         if has_releases.is_none() {
             return Err(OpenError::NotABase(path.display().to_string()));
+        }
+        let version: i32 = conn.pragma_query_value(None, "user_version", |r| r.get(0))?;
+        if version < super::schema::SCHEMA_VERSION {
+            return Err(OpenError::Outdated(path.display().to_string()));
         }
         match user_db {
             Some(p) => userdb::attach(&conn, p)?,
@@ -329,34 +326,27 @@ impl Base {
         }))
     }
 
-    fn names(&self, sql: &str) -> rusqlite::Result<Vec<(String, i64)>> {
+    fn facet(&self, kind: &str, order: &str) -> rusqlite::Result<Vec<(String, i64)>> {
         self.conn
-            .prepare(sql)?
-            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .prepare(&format!(
+                "SELECT name, n FROM facets WHERE kind = ?1 ORDER BY {order}"
+            ))?
+            .query_map([kind], |r| Ok((r.get(0)?, r.get(1)?)))?
             .collect()
     }
 
-    /// Géneros presentes con su nº de discos, por nombre.
+    /// Géneros presentes con su nº de discos, por nombre (calculado al importar).
     pub fn genres(&self) -> rusqlite::Result<Vec<(String, i64)>> {
-        self.names(
-            "SELECT g.name, count(*) FROM release_genres rg JOIN genres g ON g.id = rg.genre_id
-             GROUP BY g.id ORDER BY g.name",
-        )
+        self.facet("genre", "name")
     }
 
-    /// Estilos presentes con su nº de discos, por nombre.
+    /// Estilos presentes con su nº de discos, por nombre (calculado al importar).
     pub fn styles(&self) -> rusqlite::Result<Vec<(String, i64)>> {
-        self.names(
-            "SELECT s.name, count(*) FROM release_styles rs JOIN styles s ON s.id = rs.style_id
-             GROUP BY s.id ORDER BY s.name",
-        )
+        self.facet("style", "name")
     }
 
-    /// Países presentes con su nº de discos, de más a menos.
+    /// Países presentes con su nº de discos, de más a menos (calculado al importar).
     pub fn countries(&self) -> rusqlite::Result<Vec<(String, i64)>> {
-        self.names(
-            "SELECT country, count(*) AS n FROM releases WHERE country <> ''
-             GROUP BY country ORDER BY n DESC, country",
-        )
+        self.facet("country", "n DESC, name")
     }
 }

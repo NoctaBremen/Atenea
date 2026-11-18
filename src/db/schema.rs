@@ -9,7 +9,39 @@
 use rusqlite::Connection;
 
 /// Versión del esquema (se guarda en `PRAGMA user_version`).
-pub const SCHEMA_VERSION: i32 = 1;
+pub const SCHEMA_VERSION: i32 = 2;
+
+/// Descripciones de formato que se pueden filtrar, cada una con su bit en `releases.fmt_flags`
+/// (el filtro es un AND de bits sobre la fila, sin subconsultas).
+pub const FORMAT_DESCRIPTIONS: [&str; 8] = [
+    "LP",
+    "12\"",
+    "10\"",
+    "7\"",
+    "EP",
+    "Single",
+    "Album",
+    "Compilation",
+];
+
+/// Bits de formato de un disco a partir de sus descripciones.
+pub fn format_flags<'a>(descriptions: impl IntoIterator<Item = &'a str>) -> i64 {
+    let mut f = 0;
+    for d in descriptions {
+        if let Some(i) = FORMAT_DESCRIPTIONS
+            .iter()
+            .position(|x| x.eq_ignore_ascii_case(d.trim()))
+        {
+            f |= 1 << i;
+        }
+    }
+    f
+}
+
+/// Máscara de bits de unas descripciones elegidas en el filtro.
+pub fn format_mask(descriptions: &[String]) -> i64 {
+    format_flags(descriptions.iter().map(String::as_str))
+}
 
 /// Tablas (sin los índices secundarios, que se crean al final de la importación).
 pub const TABLES: &str = "
@@ -31,7 +63,8 @@ CREATE TABLE releases (
     year        INTEGER,
     notes       TEXT NOT NULL,
     master_id   INTEGER,
-    n_videos    INTEGER NOT NULL
+    n_videos    INTEGER NOT NULL,
+    fmt_flags   INTEGER NOT NULL
 );
 CREATE TABLE artists (
     id   INTEGER PRIMARY KEY,
@@ -108,6 +141,14 @@ CREATE TABLE credits (
     tracks     TEXT NOT NULL,
     PRIMARY KEY (release_id, position)
 ) WITHOUT ROWID;
+-- Recuentos para el panel de filtros (género, estilo, país), calculados al importar: así
+-- abrir una base no recorre millones de filas en el hilo de la interfaz.
+CREATE TABLE facets (
+    kind TEXT NOT NULL,
+    name TEXT NOT NULL,
+    n    INTEGER NOT NULL,
+    PRIMARY KEY (kind, name)
+) WITHOUT ROWID;
 CREATE VIRTUAL TABLE releases_fts USING fts5(
     artists, title, labels, catnos, tracks,
     content = '',
@@ -119,7 +160,9 @@ CREATE VIRTUAL TABLE releases_fts USING fts5(
 pub const INDEXES: &str = "
 -- Los índices de orden cubren el ORDER BY completo de cada columna de la lista (incluido el
 -- desempate por id), para que la lista entera salga ordenada sin ordenar en memoria.
-CREATE INDEX idx_releases_year    ON releases(year IS NULL, year, id);
+-- Año: un índice por sentido, con los discos sin año siempre al final.
+CREATE INDEX idx_releases_year_asc  ON releases(coalesce(year, 99999), id);
+CREATE INDEX idx_releases_year_desc ON releases(coalesce(year, -1), id);
 CREATE INDEX idx_releases_country ON releases(country COLLATE NOCASE, id);
 CREATE INDEX idx_releases_artist  ON releases(artist_line COLLATE NOCASE, title COLLATE NOCASE, id);
 CREATE INDEX idx_releases_title   ON releases(title COLLATE NOCASE, id);
@@ -140,9 +183,23 @@ pub fn create_tables(conn: &Connection) -> rusqlite::Result<()> {
     conn.pragma_update(None, "user_version", SCHEMA_VERSION)
 }
 
-/// Crea los índices secundarios y actualiza las estadísticas del planificador.
+/// Rellena los recuentos del panel de filtros.
+pub const FACETS: &str = "
+DELETE FROM facets;
+INSERT INTO facets(kind, name, n)
+    SELECT 'genre', g.name, count(*) FROM release_genres rg JOIN genres g ON g.id = rg.genre_id
+    GROUP BY g.id;
+INSERT INTO facets(kind, name, n)
+    SELECT 'style', s.name, count(*) FROM release_styles rs JOIN styles s ON s.id = rs.style_id
+    GROUP BY s.id;
+INSERT INTO facets(kind, name, n)
+    SELECT 'country', country, count(*) FROM releases WHERE country <> '' GROUP BY country;
+";
+
+/// Crea los índices secundarios, los recuentos y actualiza las estadísticas del planificador.
 pub fn create_indexes(conn: &Connection) -> rusqlite::Result<()> {
     conn.execute_batch(INDEXES)?;
+    conn.execute_batch(FACETS)?;
     conn.execute_batch("ANALYZE;")
 }
 
@@ -155,6 +212,17 @@ pub fn create_empty(conn: &Connection) -> rusqlite::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bits_de_formato() {
+        assert_eq!(format_flags(["LP", "Album"]), 1 | (1 << 6));
+        assert_eq!(
+            format_flags(["12\"", "33 ⅓ RPM", "ep"]),
+            (1 << 1) | (1 << 4)
+        );
+        assert_eq!(format_flags(["Test Pressing"]), 0);
+        assert_eq!(format_mask(&["7\"".into()]), 1 << 3);
+    }
 
     #[test]
     fn crea_base_vacia_con_indices() {
@@ -171,7 +239,7 @@ mod tests {
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(n, 13);
+        assert_eq!(n, 14);
         // FTS5 disponible (SQLite incluido con rusqlite).
         c.execute(
             "INSERT INTO releases_fts(rowid, artists, title, labels, catnos, tracks)

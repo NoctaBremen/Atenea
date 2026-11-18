@@ -81,13 +81,18 @@ pub enum SortKey {
 impl SortKey {
     fn sql(self) -> &'static str {
         match self {
-            SortKey::Artista => "r.artist_line COLLATE NOCASE {d}, r.title COLLATE NOCASE {d}",
-            SortKey::Titulo => "r.title COLLATE NOCASE {d}",
-            SortKey::Sello => "r.label_line COLLATE NOCASE {d}, r.catno_line COLLATE NOCASE {d}",
-            SortKey::Catno => "r.catno_line COLLATE NOCASE {d}",
-            SortKey::Anyo => "r.year IS NULL, r.year {d}",
-            SortKey::Pais => "r.country COLLATE NOCASE {d}",
-            SortKey::Id => "r.id {d}",
+            SortKey::Artista => {
+                "{p}r.artist_line COLLATE NOCASE {d}, {p}r.title COLLATE NOCASE {d}"
+            }
+            SortKey::Titulo => "{p}r.title COLLATE NOCASE {d}",
+            SortKey::Sello => {
+                "{p}r.label_line COLLATE NOCASE {d}, {p}r.catno_line COLLATE NOCASE {d}"
+            }
+            SortKey::Catno => "{p}r.catno_line COLLATE NOCASE {d}",
+            // Sin año al final en los dos sentidos (ver los índices de año del esquema).
+            SortKey::Anyo => "{p}{y} {d}",
+            SortKey::Pais => "{p}r.country COLLATE NOCASE {d}",
+            SortKey::Id => "{p}r.id {d}",
         }
     }
 }
@@ -244,33 +249,28 @@ pub fn where_clause(f: &Filtros) -> (Vec<String>, Vec<Value>) {
         conds.push("r.country = ? COLLATE NOCASE".into());
         ps.push(Value::Text(f.pais.clone()));
     }
+    // Géneros y estilos como conjunto (`IN`): SQLite lo saca del índice de la tabla de
+    // relación una sola vez, en vez de una subconsulta por cada disco.
     if !f.generos.is_empty() {
         conds.push(format!(
-            "EXISTS (SELECT 1 FROM release_genres rg JOIN genres g ON g.id = rg.genre_id
-                     WHERE rg.release_id = r.id AND g.name IN ({}))",
+            "r.id IN (SELECT rg.release_id FROM release_genres rg JOIN genres g ON g.id = rg.genre_id
+                      WHERE g.name IN ({}))",
             placeholders(f.generos.len())
         ));
         ps.extend(f.generos.iter().cloned().map(Value::Text));
     }
     if !f.estilos.is_empty() {
         conds.push(format!(
-            "EXISTS (SELECT 1 FROM release_styles rs JOIN styles s ON s.id = rs.style_id
-                     WHERE rs.release_id = r.id AND s.name IN ({}))",
+            "r.id IN (SELECT rs.release_id FROM release_styles rs JOIN styles s ON s.id = rs.style_id
+                      WHERE s.name IN ({}))",
             placeholders(f.estilos.len())
         ));
         ps.extend(f.estilos.iter().cloned().map(Value::Text));
     }
-    if !f.formatos.is_empty() {
-        let ors = vec!["('|' || fm.descriptions || '|') LIKE ? ESCAPE '\\'"; f.formatos.len()]
-            .join(" OR ");
-        conds.push(format!(
-            "EXISTS (SELECT 1 FROM formats fm WHERE fm.release_id = r.id AND ({ors}))"
-        ));
-        ps.extend(
-            f.formatos
-                .iter()
-                .map(|d| Value::Text(format!("%|{}|%", like_escape(d)))),
-        );
+    let mask = super::schema::format_mask(&f.formatos);
+    if mask != 0 {
+        conds.push("(r.fmt_flags & ?) <> 0".into());
+        ps.push(Value::Integer(mask));
     }
     if f.solo_con_videos {
         conds.push("r.n_videos > 0".into());
@@ -306,8 +306,28 @@ pub fn ids_query(f: &Filtros, sort: Sort, limit: Option<usize>) -> Query {
     }
     let dir = if sort.desc { "DESC" } else { "ASC" };
     sql.push_str(" ORDER BY ");
-    sql.push_str(&sort.key.sql().replace("{d}", dir));
-    sql.push_str(&format!(", r.id {dir}"));
+    let year = if sort.desc {
+        "coalesce(r.year, -1)"
+    } else {
+        "coalesce(r.year, 99999)"
+    };
+    // Estrategia de orden. Sin filtros (o solo «ocultar No me interesa», que deja casi todo),
+    // recorrer el índice de la columna da la lista ya ordenada. Con cualquier otro filtro sale
+    // mucho más barato filtrar y ordenar el resultado: recorrer el índice comprobando cada fila
+    // con acceso aleatorio cuesta lo mismo que recorrer toda la base (medido con un millón de
+    // discos: 1,8 s contra 0,16 s para 65 000 resultados). El `+` unario impide que SQLite use
+    // el índice para el `ORDER BY`.
+    let nearly_all = conds.is_empty() || (conds.len() == 1 && f.ocultar_no_interesa);
+    let prefix = if nearly_all { "" } else { "+" };
+    sql.push_str(
+        &sort
+            .key
+            .sql()
+            .replace("{y}", year)
+            .replace("{d}", dir)
+            .replace("{p}", prefix),
+    );
+    sql.push_str(&format!(", {prefix}r.id {dir}"));
     if let Some(l) = limit {
         sql.push_str(" LIMIT ?");
         params.push(Value::Integer(l as i64));
@@ -339,6 +359,23 @@ mod tests {
         let q = ids_query(&Filtros::default(), Sort::default(), None);
         assert!(!q.sql.contains("WHERE"));
         assert!(q.params.is_empty());
+        assert!(q.sql.contains("ORDER BY r.artist_line"), "usa el índice");
+        let solo_ocultar = Filtros {
+            ocultar_no_interesa: true,
+            ..Default::default()
+        };
+        assert!(
+            ids_query(&solo_ocultar, Sort::default(), None)
+                .sql
+                .contains("ORDER BY r.artist_line")
+        );
+        let con_filtro = Filtros {
+            solo_con_videos: true,
+            ..Default::default()
+        };
+        let q = ids_query(&con_filtro, Sort::default(), None);
+        assert!(q.sql.contains("ORDER BY +r.artist_line"), "{}", q.sql);
+        assert!(q.sql.ends_with("+r.id ASC"));
     }
 
     #[test]
@@ -363,9 +400,9 @@ mod tests {
         assert_eq!(q.params[0], Value::Text("\"axis\"*".into()));
         assert_eq!(q.params[1], Value::Text("%axis%".into()));
         assert_eq!(q.params[2], Value::Integer(1990));
-        assert_eq!(q.params[5], Value::Text("%|12\"|%".into()));
+        assert_eq!(q.params[5], Value::Integer(1 << 1));
         assert_eq!(q.params.last(), Some(&Value::Integer(10)));
-        assert!(q.sql.contains("ORDER BY r.year IS NULL, r.year DESC"));
+        assert!(q.sql.contains("ORDER BY +coalesce(r.year, -1) DESC"));
     }
 
     #[test]

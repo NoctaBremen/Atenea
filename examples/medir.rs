@@ -8,7 +8,21 @@ fn main() -> anyhow::Result<()> {
     let path = std::env::args()
         .nth(1)
         .ok_or_else(|| anyhow::anyhow!("falta la base"))?;
+    let t = Instant::now();
     let b = Base::open(path.as_ref(), None)?;
+    println!(
+        "abrir la base                 {:>6.0} ms",
+        t.elapsed().as_secs_f64() * 1000.0
+    );
+    let t = Instant::now();
+    let (g, s, c) = (b.genres()?, b.styles()?, b.countries()?);
+    println!(
+        "recuentos del panel           {:>6.0} ms ({} géneros, {} estilos, {} países)",
+        t.elapsed().as_secs_f64() * 1000.0,
+        g.len(),
+        s.len(),
+        c.len()
+    );
     let casos: Vec<(&str, Filtros, Sort)> = vec![
         ("todo, por artista", Filtros::default(), Sort::default()),
         (
