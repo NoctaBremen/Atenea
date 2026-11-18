@@ -44,13 +44,23 @@ export VERSION="$(cd "$ROOT" && git describe --tags --always 2>/dev/null || echo
 export LDAI_OUTPUT="$OUT/Vault-x86_64.AppImage"
 
 cd "$OUT"
+# 1) Copiar bibliotecas y GTK al AppDir.
 "$TOOLS/linuxdeploy-x86_64.AppImage" \
     --appdir "$APPDIR" \
     --executable "$APPDIR/usr/bin/vault" \
     --desktop-file "$ROOT/packaging/$APP_ID.desktop" \
     --icon-file "$ROOT/packaging/$APP_ID.svg" \
-    --plugin gtk \
-    --output appimage
+    --plugin gtk
+
+# 2) El lanzador del plugin fuerza «Adwaita:light» si el escritorio no dice que prefiere
+#    oscuro (pasa en Hyprland sin portal): Vault es siempre oscuro, así que por defecto dark.
+#    Quien quiera otro puede seguir usando APPIMAGE_GTK_THEME.
+for hook in "$APPDIR"/apprun-hooks/*gtk*; do
+    sed -i 's/GTK_THEME_VARIANT="light";;/GTK_THEME_VARIANT="dark";;/' "$hook"
+done
+
+# 3) Empaquetar.
+"$TOOLS/linuxdeploy-x86_64.AppImage" --appdir "$APPDIR" --output appimage
 
 echo
 echo "Listo: $LDAI_OUTPUT"
