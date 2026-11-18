@@ -1,9 +1,9 @@
 [package]
-name = "atenea"
+name = "vault"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.92"
-default-run = "atenea"
+default-run = "vault"
 description = "Explorador de vinilos sobre los dumps de Discogs (Rust + GTK4)"
 license = "MIT"
 repository = "https://github.com/NoctaBremen/Atenea"

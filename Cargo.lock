@@ -36,25 +36,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atenea"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-channel",
- "flate2",
- "gtk4",
- "quick-xml",
- "rusqlite",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "toml",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1121,6 +1102,25 @@ name = "valuable"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
+
+[[package]]
+name = "vault"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "flate2",
+ "gtk4",
+ "quick-xml",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "vcpkg"

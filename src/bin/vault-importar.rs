@@ -1,7 +1,7 @@
-//! `atenea-importar`: importa un dump de Discogs a una base de Atenea desde la terminal.
+//! `vault-importar`: importa un dump de Discogs a una base de Vault desde la terminal.
 //!
 //! ```text
-//! atenea-importar <dump.xml.gz> <salida.db> [--nombre N] [--formato Vinyl]...
+//! vault-importar <dump.xml.gz> <salida.db> [--nombre N] [--formato Vinyl]...
 //!                 [--genero Electronic]... [--estilo "Electronic/Tech House"]...
 //!                 [--desde 1990] [--hasta 2026]
 //! ```
@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use anyhow::{Context, bail};
-use atenea::db::{ImportFilter, ImportOptions, Progress, import};
+use vault::db::{ImportFilter, ImportOptions, Progress, import};
 
 fn parse_args(args: &[String]) -> anyhow::Result<ImportOptions> {
     let mut pos = Vec::new();
@@ -40,7 +40,7 @@ fn parse_args(args: &[String]) -> anyhow::Result<ImportOptions> {
     }
     let [dump, output] = pos.as_slice() else {
         bail!(
-            "uso: atenea-importar <dump.xml.gz> <salida.db> [--nombre N] [--formato F]... \
+            "uso: vault-importar <dump.xml.gz> <salida.db> [--nombre N] [--formato F]... \
              [--genero G]... [--estilo G/E]... [--desde AAAA] [--hasta AAAA]"
         );
     };

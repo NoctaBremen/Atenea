@@ -2,7 +2,7 @@
 
 use std::time::Instant;
 
-use atenea::db::{Base, Filtros, Sort, SortKey};
+use vault::db::{Base, Filtros, Sort, SortKey};
 
 fn main() -> anyhow::Result<()> {
     let path = std::env::args()

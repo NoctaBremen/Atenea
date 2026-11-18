@@ -4,7 +4,7 @@
 use std::io::Write;
 use std::path::Path;
 
-use atenea::discogs::{Release, open_dump};
+use vault::discogs::{Release, open_dump};
 
 const SAMPLE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),

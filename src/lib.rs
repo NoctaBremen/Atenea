@@ -1,6 +1,6 @@
-//! Atenea: explorador de vinilos sobre los dumps de Discogs.
+//! Vault: explorador de vinilos sobre los dumps de Discogs.
 //!
-//! La lógica vive en la biblioteca y se prueba sin GTK; el binario `atenea` es la interfaz.
+//! La lógica vive en la biblioteca y se prueba sin GTK; el binario `vault` es la interfaz.
 
 pub mod catalog;
 pub mod config;

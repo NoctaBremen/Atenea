@@ -2,10 +2,10 @@
 //!
 //! Se lanza un único proceso `mpv --idle` que vive mientras la app esté abierta. Por defecto
 //! solo audio; el vídeo se enciende y apaga en caliente con la propiedad `vid`, en una ventana
-//! pequeña con `app-id`/clase `atenea-video` para poder hacerla flotante en Hyprland o mango:
+//! pequeña con `app-id`/clase `vault-video` para poder hacerla flotante en Hyprland o mango:
 //!
 //! ```text
-//! windowrulev2 = float, class:^(atenea-video)$
+//! windowrulev2 = float, class:^(vault-video)$
 //! ```
 //!
 //! Los mensajes de mpv (respuestas y cambios de propiedades) llegan por un canal como
@@ -91,9 +91,9 @@ impl PlayerOptions {
             "--keep-open=no".to_owned(),
             "--geometry=480x270-24-24".to_owned(),
             "--autofit-larger=640x360".to_owned(),
-            "--title=Atenea — ${media-title}".to_owned(),
-            "--x11-name=atenea-video".to_owned(),
-            "--wayland-app-id=atenea-video".to_owned(),
+            "--title=Vault — ${media-title}".to_owned(),
+            "--x11-name=vault-video".to_owned(),
+            "--wayland-app-id=vault-video".to_owned(),
             "--ytdl=yes".to_owned(),
             // Solo audio no necesita bajar vídeo: formato de audio si lo hay.
             "--ytdl-format=bestaudio/best".to_owned(),
@@ -277,7 +277,7 @@ impl Player {
         let dir = std::env::var_os("XDG_RUNTIME_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(std::env::temp_dir);
-        let socket_path = dir.join(format!("atenea-mpv-{}.sock", std::process::id()));
+        let socket_path = dir.join(format!("vault-mpv-{}.sock", std::process::id()));
         let _ = std::fs::remove_file(&socket_path);
         let child = Command::new("mpv")
             .args(opts.args())

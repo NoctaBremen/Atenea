@@ -1,7 +1,7 @@
 //! Catálogo género → estilos de Discogs, incluido en el programa (T06).
 //!
 //! Sirve para el filtro en árbol del diálogo de importación sin tener que recorrer el dump
-//! antes. Se genera una vez con `atenea-catalogo` (que solo mira géneros y estilos) y se guarda
+//! antes. Se genera una vez con `vault-catalogo` (que solo mira géneros y estilos) y se guarda
 //! en `data/catalogo.tsv`: una línea `Género<TAB>Estilo` por par, `#` para comentarios.
 
 use std::collections::{BTreeMap, BTreeSet};

@@ -8,7 +8,7 @@ use std::sync::mpsc::{Sender, channel};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use atenea::db::{Base, Filtros, Sort};
+use vault::db::{Base, Filtros, Sort};
 
 /// Una búsqueda.
 #[derive(Debug, Clone)]
@@ -49,7 +49,7 @@ impl SearchWorker {
         let interrupt: Arc<Mutex<Option<rusqlite::InterruptHandle>>> = Arc::default();
         let handle_slot = Arc::clone(&interrupt);
         std::thread::Builder::new()
-            .name("atenea-busqueda".into())
+            .name("vault-busqueda".into())
             .spawn(move || {
                 let mut open: Option<(PathBuf, Base)> = None;
                 while let Ok(mut req) = rx.recv() {

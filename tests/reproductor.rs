@@ -4,7 +4,7 @@
 
 use std::time::{Duration, Instant};
 
-use atenea::player::{Player, PlayerEvent, PlayerOptions, in_path};
+use vault::player::{Player, PlayerEvent, PlayerOptions, in_path};
 
 fn wait_for(
     ev: &std::sync::mpsc::Receiver<PlayerEvent>,

@@ -5,7 +5,7 @@ releases de Discogs (mismas etiquetas y atributos), para los tests.
 Todos los artistas, sellos y títulos son inventados. Cuando haya acceso al dump real, la muestra
 se puede sustituir por una real con:
 
-    cargo run --bin atenea-muestra -- discogs_AAAAMMDD_releases.xml.gz tests/data/sample_releases.xml 2000
+    cargo run --bin vault-muestra -- discogs_AAAAMMDD_releases.xml.gz tests/data/sample_releases.xml 2000
 
 Los tests solo dependen de los discos fijos del principio (ids 1–9), que se mantienen a mano
 en tests/data/fixed_releases.xml.

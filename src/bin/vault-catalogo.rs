@@ -1,4 +1,4 @@
-//! `atenea-catalogo <dump.xml.gz>`: recorre un dump y escribe en la salida estándar el
+//! `vault-catalogo <dump.xml.gz>`: recorre un dump y escribe en la salida estándar el
 //! catálogo género → estilo (formato de `data/catalogo.tsv`). Se ejecuta una vez para
 //! regenerar el catálogo incluido en el programa.
 
@@ -6,14 +6,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use anyhow::bail;
-use atenea::catalog::Catalog;
-use atenea::db::import::dump_date;
-use atenea::discogs::open_dump;
+use vault::catalog::Catalog;
+use vault::db::import::dump_date;
+use vault::discogs::open_dump;
 
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let [dump] = args.as_slice() else {
-        bail!("uso: atenea-catalogo <dump.xml.gz> > data/catalogo.tsv");
+        bail!("uso: vault-catalogo <dump.xml.gz> > data/catalogo.tsv");
     };
     let path = PathBuf::from(dump);
     let mut cat = Catalog::default();
@@ -56,7 +56,7 @@ fn main() -> anyhow::Result<()> {
     print!(
         "{}",
         cat.to_tsv(&format!(
-            "Catálogo género → estilo de Discogs, generado con atenea-catalogo\n\
+            "Catálogo género → estilo de Discogs, generado con vault-catalogo\n\
              desde el dump del {date} ({n} discos)."
         ))
     );

@@ -1,16 +1,16 @@
-//! Atenea: explorador de vinilos sobre los dumps de Discogs.
+//! Vault: explorador de vinilos sobre los dumps de Discogs.
 
 mod ui;
 
 use gtk::glib;
 use gtk::prelude::*;
 
-const APP_ID: &str = "io.github.noctabremen.Atenea";
+const APP_ID: &str = "io.github.noctabremen.Vault";
 
 fn main() -> glib::ExitCode {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_env("ATENEA_LOG")
+            tracing_subscriber::EnvFilter::try_from_env("VAULT_LOG")
                 .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn")),
         )
         .init();
@@ -19,5 +19,5 @@ fn main() -> glib::ExitCode {
     app.connect_startup(|_| gtk::Window::set_default_icon_name(APP_ID));
     app.connect_activate(ui::window::build);
     // Los argumentos (una base .db) los lee la ventana; a GTK solo se le pasa el nombre.
-    app.run_with_args(&["atenea"])
+    app.run_with_args(&["vault"])
 }

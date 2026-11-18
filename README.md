@@ -1,4 +1,4 @@
-# Atenea
+# Vault
 
 Explorador de vinilos sobre los dumps de Discogs. Rust + GTK4, minimalista, con los mismos temas
 que Spector y Digityzer (Dracula por defecto).
@@ -21,7 +21,7 @@ Compilar y ejecutar:
 
 ```bash
 cargo build --release
-./target/release/atenea
+./target/release/vault
 ```
 
 O con el PKGBUILD de `packaging/` (instala también `.desktop` e icono):
@@ -33,7 +33,7 @@ cd packaging && makepkg -si
 ## Primer uso
 
 1. Descarga `discogs_AAAAMMDD_releases.xml.gz` de data.discogs.com (no hace falta descomprimirlo).
-2. En Atenea: **Bases → Importar dump…**. Por defecto viene el preajuste **«Todo en vinilo»**
+2. En Vault: **Bases → Importar dump…**. Por defecto viene el preajuste **«Todo en vinilo»**
    (todos los géneros, solo vinilo), que es el uso recomendado. Para probar antes, crea una
    base pequeña marcando un solo estilo (p. ej. Electronic → Tech House).
 3. La importación va en segundo plano con progreso y se puede cancelar. Al acabar, la base se
@@ -42,10 +42,10 @@ cd packaging && makepkg -si
 Desde la terminal también se puede importar:
 
 ```bash
-atenea-importar discogs_20261101_releases.xml.gz ~/.local/share/atenea/bases/todo-en-vinilo.db \
+vault-importar discogs_20261101_releases.xml.gz ~/.local/share/vault/bases/todo-en-vinilo.db \
   --nombre "Todo en vinilo" --formato Vinyl
 
-atenea-importar discogs_20261101_releases.xml.gz tech-house.db \
+vault-importar discogs_20261101_releases.xml.gz tech-house.db \
   --estilo "Electronic/Tech House" --formato Vinyl --desde 1995 --hasta 2005
 ```
 
@@ -75,21 +75,21 @@ artista** rellenan los filtros y buscan.
 
 ## Vídeo flotante en Hyprland / mango
 
-La ventana de vídeo de mpv usa la clase / app-id `atenea-video`:
+La ventana de vídeo de mpv usa la clase / app-id `vault-video`:
 
 ```
-windowrulev2 = float, class:^(atenea-video)$
-windowrulev2 = size 480 270, class:^(atenea-video)$
-windowrulev2 = move 100%-500 100%-300, class:^(atenea-video)$
+windowrulev2 = float, class:^(vault-video)$
+windowrulev2 = size 480 270, class:^(vault-video)$
+windowrulev2 = move 100%-500 100%-300, class:^(vault-video)$
 ```
 
 ## Dónde se guarda cada cosa
 
 | Qué | Dónde |
 |---|---|
-| Ajustes (tema, sonido, recientes) | `~/.config/atenea/config.toml` |
-| Bases de Discogs | `~/.local/share/atenea/bases/*.db` (se puede cambiar en Ajustes) |
-| Tus datos: marcadores, notas, maletas, búsquedas | `~/.local/share/atenea/user.db` |
+| Ajustes (tema, sonido, recientes) | `~/.config/vault/config.toml` |
+| Bases de Discogs | `~/.local/share/vault/bases/*.db` (se puede cambiar en Ajustes) |
+| Tus datos: marcadores, notas, maletas, búsquedas | `~/.local/share/vault/user.db` |
 
 Una base importada con una versión anterior del esquema pide volver a importar el dump (tus datos
 no se tocan). Tus datos van aparte y se enlazan por `release_id`: sirven para todas las bases y no se pierden
@@ -97,10 +97,10 @@ si borras o vuelves a importar una base. Las bases de Discogs se abren en solo l
 
 ## Herramientas
 
-- `atenea-importar`: importar sin interfaz (ver arriba).
-- `atenea-muestra <dump.xml.gz> <salida.xml> [n]`: los primeros n discos (2000) de un dump, para
+- `vault-importar`: importar sin interfaz (ver arriba).
+- `vault-muestra <dump.xml.gz> <salida.xml> [n]`: los primeros n discos (2000) de un dump, para
   los tests.
-- `atenea-catalogo <dump.xml.gz> > data/catalogo.tsv`: regenera el catálogo género → estilo que
+- `vault-catalogo <dump.xml.gz> > data/catalogo.tsv`: regenera el catálogo género → estilo que
   usa el diálogo de importación.
 - `cargo run --release --example medir -- base.db`: tiempos de búsqueda sobre una base.
 
@@ -115,9 +115,9 @@ cargo fmt && cargo clippy --all-targets -- -D warnings && cargo test
 - `tests/data/sample_releases.xml` es una muestra **sintética** con el formato del dump
   (`tools/gen_sample.py`); los tests dependen solo de los 9 discos fijos de
   `tests/data/fixed_releases.xml`. Para sustituirla por una real:
-  `atenea-muestra discogs_…_releases.xml.gz tests/data/sample_releases.xml 2000`.
+  `vault-muestra discogs_…_releases.xml.gz tests/data/sample_releases.xml 2000`.
 - `data/catalogo.tsv` es provisional (escrito a mano): conviene regenerarlo con
-  `atenea-catalogo` sobre un dump real.
+  `vault-catalogo` sobre un dump real.
 - El tema de color viene del módulo de temas de Digityzer (commit 1f7e585).
 
-Registro: `ATENEA_LOG=debug atenea`.
+Registro: `VAULT_LOG=debug vault`.

@@ -1,7 +1,7 @@
 //! Temas de color (T02): once roles por tema, diez temas oscuros con sus paletas oficiales.
 //!
 //! Copiado del módulo de temas de Digityzer (`crates/audio-core/src/theme.rs`, commit 1f7e585)
-//! y adaptado a Atenea: sin el degradado del espectrograma y con reglas de CSS para la lista de
+//! y adaptado a Vault: sin el degradado del espectrograma y con reglas de CSS para la lista de
 //! discos. Spector y Digityzer no se tocan. Ningún widget lleva colores fijos: todos leen los
 //! roles de [`Theme`].
 //!

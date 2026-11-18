@@ -1,5 +1,5 @@
 //! Tus datos (T18–T22, T14): marcadores, notas, maletas y búsquedas guardadas, en
-//! `~/.local/share/atenea/user.db`.
+//! `~/.local/share/vault/user.db`.
 //!
 //! Va aparte de la base de Discogs y se enlaza solo por `release_id`: la base de Discogs se abre
 //! en solo lectura y se puede sustituir (o tener varias) sin perder nada de esto.
@@ -91,12 +91,12 @@ pub enum UserDbError {
 
 type Result<T> = std::result::Result<T, UserDbError>;
 
-/// Ruta por defecto: `$XDG_DATA_HOME/atenea/user.db` o `~/.local/share/atenea/user.db`.
+/// Ruta por defecto: `$XDG_DATA_HOME/vault/user.db` o `~/.local/share/vault/user.db`.
 pub fn default_path() -> Option<PathBuf> {
     data_dir().map(|d| d.join("user.db"))
 }
 
-/// Directorio de datos de Atenea (`~/.local/share/atenea`).
+/// Directorio de datos de Vault (`~/.local/share/vault`).
 pub fn data_dir() -> Option<PathBuf> {
     let base = std::env::var_os("XDG_DATA_HOME")
         .filter(|v| !v.is_empty())
@@ -104,7 +104,7 @@ pub fn data_dir() -> Option<PathBuf> {
         .or_else(|| {
             std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local").join("share"))
         })?;
-    Some(base.join("atenea"))
+    Some(base.join("vault"))
 }
 
 fn now() -> i64 {

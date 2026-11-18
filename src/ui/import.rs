@@ -10,10 +10,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
-use atenea::catalog::Catalog;
-use atenea::db::{ImportFilter, ImportOptions, Progress, import};
 use gtk::glib;
 use gtk::prelude::*;
+use vault::catalog::Catalog;
+use vault::db::{ImportFilter, ImportOptions, Progress, import};
 
 /// Formatos que se ofrecen.
 const FORMATS: [&str; 6] = ["Vinyl", "CD", "Cassette", "File", "Shellac", "Box Set"];

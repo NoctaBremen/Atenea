@@ -8,11 +8,11 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Prefijo de los temporales.
-pub const TEMP_PREFIX: &str = ".atenea-tmp-";
+pub const TEMP_PREFIX: &str = ".vault-tmp-";
 
 static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
-/// Ruta temporal en el mismo directorio que `dest`: `.<nombre>.atenea-tmp-<pid>-<n>`.
+/// Ruta temporal en el mismo directorio que `dest`: `.<nombre>.vault-tmp-<pid>-<n>`.
 pub fn temp_path_for(dest: &Path) -> PathBuf {
     let name = dest
         .file_name()

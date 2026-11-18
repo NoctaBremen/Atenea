@@ -5,10 +5,10 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, OnceLock};
 
-use atenea::db::{
+use vault::db::{
     Base, Filtros, ImportFilter, ImportOptions, Mark, Progress, Sort, SortKey, import,
 };
-use atenea::discogs::{Release, open_dump};
+use vault::discogs::{Release, open_dump};
 
 const SAMPLE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),

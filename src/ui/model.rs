@@ -6,11 +6,11 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use atenea::db::{Base, Mark, Row};
 use gtk::gio;
 use gtk::glib;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
+use vault::db::{Base, Mark, Row};
 
 /// Filas por página.
 pub const PAGE: u32 = 200;
@@ -29,7 +29,7 @@ mod row_imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for RowObject {
-        const NAME: &'static str = "AteneaRowObject";
+        const NAME: &'static str = "VaultRowObject";
         type Type = super::RowObject;
     }
 
@@ -77,7 +77,7 @@ mod model_imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for ReleaseModel {
-        const NAME: &'static str = "AteneaReleaseModel";
+        const NAME: &'static str = "VaultReleaseModel";
         type Type = super::ReleaseModel;
         type Interfaces = (gio::ListModel,);
     }

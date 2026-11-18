@@ -1,4 +1,4 @@
-//! Configuración en `~/.config/atenea/config.toml`: tema (T02), bases recientes (T08),
+//! Configuración en `~/.config/vault/config.toml`: tema (T02), bases recientes (T08),
 //! sonido y vídeo (T15, T23). Se escribe de forma atómica; si falta o está dañada, valores por
 //! defecto, y los campos que falten toman el suyo.
 //!
@@ -23,7 +23,7 @@ pub struct Config {
     pub theme: String,
     /// Bases abiertas recientemente, la última primero (se reabre al arrancar).
     pub recent_bases: Vec<PathBuf>,
-    /// Carpeta donde se crean las bases nuevas (vacía = `~/.local/share/atenea/bases`).
+    /// Carpeta donde se crean las bases nuevas (vacía = `~/.local/share/vault/bases`).
     pub bases_dir: PathBuf,
     /// Servidor de sonido.
     pub audio: AudioServer,
@@ -49,13 +49,13 @@ impl Default for Config {
     }
 }
 
-/// Ruta del archivo: `$XDG_CONFIG_HOME/atenea/config.toml` o `~/.config/atenea/config.toml`.
+/// Ruta del archivo: `$XDG_CONFIG_HOME/vault/config.toml` o `~/.config/vault/config.toml`.
 pub fn config_path() -> Option<PathBuf> {
     let base = std::env::var_os("XDG_CONFIG_HOME")
         .filter(|v| !v.is_empty())
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config")))?;
-    Some(base.join("atenea").join("config.toml"))
+    Some(base.join("vault").join("config.toml"))
 }
 
 impl Config {
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn ida_y_vuelta_y_valores_por_defecto() {
         let dir = tempfile::tempdir().unwrap();
-        let p = dir.path().join("atenea").join("config.toml");
+        let p = dir.path().join("vault").join("config.toml");
         assert_eq!(Config::load_from(&p), Config::default());
         let mut c = Config {
             theme: "nord".into(),

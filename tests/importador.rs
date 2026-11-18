@@ -5,9 +5,9 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use atenea::db::{ImportError, ImportFilter, ImportOptions, Progress, import};
-use atenea::discogs::{Release, open_dump};
 use rusqlite::Connection;
+use vault::db::{ImportError, ImportFilter, ImportOptions, Progress, import};
+use vault::discogs::{Release, open_dump};
 
 const SAMPLE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),

@@ -5,10 +5,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use atenea::db::base::FORMAT_DESCRIPTIONS;
-use atenea::db::{Base, Filtros, Mark};
-use atenea::userdb::Suitcase;
 use gtk::prelude::*;
+use vault::db::base::FORMAT_DESCRIPTIONS;
+use vault::db::{Base, Filtros, Mark};
+use vault::userdb::Suitcase;
 
 /// Lista de casillas con buscador (géneros, estilos).
 struct CheckList {

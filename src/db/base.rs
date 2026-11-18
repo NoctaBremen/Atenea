@@ -175,11 +175,11 @@ pub enum OpenError {
     /// SQLite.
     #[error("no se puede abrir la base: {0}")]
     Sql(#[from] rusqlite::Error),
-    /// No es una base de Atenea.
-    #[error("{0} no es una base de Atenea")]
+    /// No es una base de Vault.
+    #[error("{0} no es una base de Vault")]
     NotABase(String),
-    /// Base de una versión anterior de Atenea.
-    #[error("{0} se importó con una versión anterior de Atenea: vuelve a importar el dump")]
+    /// Base de una versión anterior de Vault.
+    #[error("{0} se importó con una versión anterior de Vault: vuelve a importar el dump")]
     Outdated(String),
 }
 

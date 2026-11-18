@@ -11,15 +11,15 @@ use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
-use atenea::config::Config;
-use atenea::db::base::DetailVideo;
-use atenea::db::{Base, Mark, Row, Sort, SortKey};
-use atenea::player::{AudioServer, Player, PlayerEvent, PlayerOptions};
-use atenea::theme::{THEMES, Theme};
-use atenea::userdb::{self, SUITCASE_COLORS};
 use gtk::gdk;
 use gtk::glib;
 use gtk::prelude::*;
+use vault::config::Config;
+use vault::db::base::DetailVideo;
+use vault::db::{Base, Mark, Row, Sort, SortKey};
+use vault::player::{AudioServer, Player, PlayerEvent, PlayerOptions};
+use vault::theme::{THEMES, Theme};
+use vault::userdb::{self, SUITCASE_COLORS};
 
 use super::detail::{DetailActions, DetailPanel};
 use super::dialogs;
@@ -28,7 +28,7 @@ use super::model::{ReleaseModel, RowObject};
 use super::playbar::PlayBar;
 use super::search::{Request, Response, SearchWorker};
 
-/// Estilo propio de Atenea, después del CSS del tema.
+/// Estilo propio de Vault, después del CSS del tema.
 const CSS: &str = "
 .placeholder-title { font-size: 28pt; font-weight: bold; }
 .settings-popover { padding: 12px; }
@@ -161,7 +161,7 @@ impl App {
                 self.base_subtitle.set_label(&sub);
                 self.base_subtitle.set_visible(true);
                 self.window
-                    .set_title(Some(&format!("Atenea — {}", info.name)));
+                    .set_title(Some(&format!("Vault — {}", info.name)));
                 self.model.set_base(Some(Rc::clone(&b)));
                 self.filters().load_base(&b);
                 self.base.replace(Some(b));
@@ -185,7 +185,7 @@ impl App {
 
     fn choose_base(self: &Rc<Self>) {
         let filter = gtk::FileFilter::new();
-        filter.set_name(Some("Bases de Atenea (*.db)"));
+        filter.set_name(Some("Bases de Vault (*.db)"));
         filter.add_pattern("*.db");
         let filters = gtk::gio::ListStore::new::<gtk::FileFilter>();
         filters.append(&filter);
@@ -428,7 +428,7 @@ impl App {
                 drop.connect_drop(move |_, value, _, _| {
                     r.remove_css_class("drop-hover");
                     let Some(id) = value.get::<String>().ok().and_then(|s| {
-                        s.strip_prefix("atenea-release:")
+                        s.strip_prefix("vault-release:")
                             .and_then(|x| x.parse().ok())
                     }) else {
                         return false;
@@ -607,7 +607,7 @@ impl App {
             let Ok(f) = r else { return };
             let Some(p) = f.path() else { return };
             let res = std::fs::File::create(&p)
-                .and_then(|file| atenea::export::write_csv(std::io::BufWriter::new(file), &rows));
+                .and_then(|file| vault::export::write_csv(std::io::BufWriter::new(file), &rows));
             match res {
                 Ok(()) => {
                     let mut msg = format!("{} discos exportados a {}", rows.len(), p.display());
@@ -632,7 +632,7 @@ impl App {
             audio: c.audio,
             device: c.audio_device.clone(),
             video: c.video,
-            ao_override: std::env::var("ATENEA_AO").ok(),
+            ao_override: std::env::var("VAULT_AO").ok(),
         };
         match Player::launch(&opts) {
             Ok(p) => {
@@ -929,7 +929,7 @@ fn text_column(
                 let item = item_w.upgrade()?;
                 let obj = item.item().and_downcast::<RowObject>()?;
                 Some(gdk::ContentProvider::for_value(
-                    &format!("atenea-release:{}", obj.id()).to_value(),
+                    &format!("vault-release:{}", obj.id()).to_value(),
                 ))
             });
             l.add_controller(src);
@@ -1375,7 +1375,7 @@ pub fn build(gtk_app: &gtk::Application) {
     let title_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     title_box.set_valign(gtk::Align::Center);
     let base_title = gtk::Label::builder()
-        .label("Atenea")
+        .label("Vault")
         .css_classes(["base-title"])
         .build();
     let base_subtitle = gtk::Label::builder()
@@ -1402,7 +1402,7 @@ pub fn build(gtk_app: &gtk::Application) {
 
     let window = gtk::ApplicationWindow::builder()
         .application(gtk_app)
-        .title("Atenea")
+        .title("Vault")
         .default_width(1400)
         .default_height(860)
         .titlebar(&header)
@@ -1582,7 +1582,7 @@ pub fn build(gtk_app: &gtk::Application) {
     welcome.set_halign(gtk::Align::Center);
     welcome.append(
         &gtk::Label::builder()
-            .label("Atenea")
+            .label("Vault")
             .css_classes(["placeholder-title"])
             .build(),
     );
@@ -1829,7 +1829,7 @@ pub fn build(gtk_app: &gtk::Application) {
             app.config.borrow_mut().forget_recent(&p);
         }
     }
-    // Ruta de una base pasada por la línea de órdenes: `atenea base.db`.
+    // Ruta de una base pasada por la línea de órdenes: `vault base.db`.
     if let Some(p) = std::env::args().nth(1).map(PathBuf::from)
         && p.is_file()
     {

@@ -1,5 +1,5 @@
 # Catálogo género → estilo de Discogs (PROVISIONAL: escrito a mano).
-# Se regenera desde un dump real con: cargo run --release --bin atenea-catalogo -- <dump.xml.gz> > data/catalogo.tsv
+# Se regenera desde un dump real con: cargo run --release --bin vault-catalogo -- <dump.xml.gz> > data/catalogo.tsv
 Blues	Boogie Woogie
 Blues	Chicago Blues
 Blues	Country Blues

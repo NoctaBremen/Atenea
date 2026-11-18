@@ -5,10 +5,10 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use atenea::db::{Detail, Filtros, Mark};
-use atenea::userdb::Suitcase;
 use gtk::glib;
 use gtk::prelude::*;
+use vault::db::{Detail, Filtros, Mark};
+use vault::userdb::Suitcase;
 
 /// Lo que el panel pide a la ventana.
 pub struct DetailActions {
